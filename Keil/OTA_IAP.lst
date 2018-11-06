@@ -1,0 +1,576 @@
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02b
+OBJECT MODULE PLACED IN .\OTA_IAP.obj
+ASSEMBLER INVOKED BY: D:\Keil_v5\C51\BIN\A51.EXE ..\OTA\OTA_IAP.asm SET(LARGE) DEBUG PRINT(.\OTA_IAP.lst) OBJECT(.\OTA_I
+                      AP.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     ;------------------------------------------------------------------------------
+                       2     ; File name: OTA_IAP.asm
+                       3     ; Version: v7
+                       4     ;------------------------------------------------------------------------------
+                       5     ;#include "OTA_IAP.inc"
+  0300          +1     6     INTERRUPT_OFFSET    equ     0x0300
+  007B          +1     7     IAP_PROCESS_ADDRESS equ     0x007B
+                       8     
+                       9     EXTRN CODE (STARTUP1)
+                      10     
+                      11     ;------------------------------------------------------------------------------
+                      12     ; DATA memory
+                      13     ;   0x00~0x1F - BANK 0~3
+                      14     ;   0x20~0x2F - Bit accessable
+                      15     ;   0x30~0x4F - general use direct memory
+                      16     ;   0x60~0x7F - stack (48bytes)
+                      17     ;------------------------------------------------------------------------------
+                      18     
+  0030                19         SourceDPH   equ     0x30+0
+  0031                20         SourceDPL   equ     0x30+1
+  0032                21         SourceBank  equ     0x30+2
+  0033                22         TargetDPH   equ     0x30+3
+  0034                23         TargetDPL   equ     0x30+4
+  0035                24         TargetBank  equ     0x30+5
+  0036                25         UpdateDPH   equ     0x30+6
+  0037                26         BDCountL    equ     0x30+7     ; Battery Detect Count L
+  0038                27         BDCountH    equ     0x30+8     ; Battery Detect Count H
+  0039                28         TryCount    equ     0x30+9
+  003A                29         ReadData    equ     0x30+10
+  0040                30         Buffer      equ     0x30+16
+                      31     
+                      32     ;------------------------------------------------------------------------------
+                      33     ; SST flash control
+                      34     
+                      35     
+                      36     
+                      37     
+                      38     
+                      39     ;------------------------------------------------------------------------------
+                      40     ; OTA define
+                      41     
+                      42     
+                      43     
+                      44     
+                      45     
+                      46     
+                      47     
+                      48     
+                      49     ;------------------------------------------------------------------------------
+                      50     ; Battery detect define
+                      51     
+                      52     
+  0094                53     sfr CODEBANK    = 0x94;
+  00EB                54     sfr TA          = 0xEB;
+  009A                55     sfr FLASHCTRL   = 0x9A;
+  009B                56     sfr FLASHTMR    = 0x9B;
+  00E8                57     sfr EIE         = 0xE8;
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     2
+
+  0091                58     sfr EIF         = 0x91;
+                      59     ;sfr PCON        = 0x87;
+  00D1                60     sfr P0OE        = 0xD1;
+  00D2                61     sfr P0PUN       = 0xD2;
+  00BA                62     sfr RSFLAG      = 0xBA;
+  00D8                63     sfr WDCON       = 0xD8;
+                      64     
+----                  65             CSEG    AT      IAP_PROCESS_ADDRESS
+                      66     
+007B                  67     OTA_BEGIN:
+007B 758160           68             mov     SP, #0x60
+007E 759400           69             mov     CODEBANK,#0
+0081 75A800           70             mov     IE,#0
+0084 7B00             71             mov     R3,#0
+                      72             
+0086 7400             73             mov     A, #0x00
+0088 31FB             74             call    F_FlashControl
+                      75             
+008A 753789           76             mov     BDCountL, #(27273 mod 256)
+008D 75386A           77             mov     BDCountH, #(27273 /   256)
+0090                  78     _OTA_BatteryDetect:
+0090 5112             79             call    F_BatteryDetect                 ; run bettery detect (PASS: return A=1, NOT
+                              PASS: return A=0)
+0092 6036             80             jz      _OTA_PROCESS_Reset              ; if A==0, jump to 0x0000 (reset MCU)
+0094 D537F9           81             djnz    BDCountL, _OTA_BatteryDetect
+0097 E538             82             mov     a, BDCountH
+0099 6005             83             jz      _OTA_START
+009B D538F2           84             djnz    BDCountH, _OTA_BatteryDetect     ; if bettery detect pass with BDCount time
+                             s, OTA START
+009E 80F0             85             jmp     _OTA_BatteryDetect
+                      86     
+00A0                  87     _OTA_START:
+00A0 90FFFE           88             mov     DPTR, #0xFFFE
+00A3                  89         _OTA_PROCESS_CHECK_CODE_L:
+00A3 E4               90             clr     a
+00A4 93               91             movc    a, @a+DPTR
+00A5 B4FF1E           92             cjne    a, #0xFF, _OTA_PROCESS_END
+                      93     
+00A8                  94         _OTA_PROCESS_CHECK_CODE_H:
+00A8 7401             95             mov     a, #1
+00AA 93               96             movc    a, @a+DPTR
+00AB B4FF18           97             cjne    A, #0xFF, _OTA_PROCESS_END
+                      98     
+00AE                  99         _OTA_PROCESS_CHECK_BANK_CODE_LH:
+00AE 759402          100             mov     CODEBANK,#2
+00B1 90FFFE          101             mov     DPTR, #0xFFFE
+00B4 E4              102             clr     a
+00B5 93              103             movc    a, @a+DPTR
+00B6 B45A0D          104             cjne    a, #0x5A, _OTA_PROCESS_END
+00B9 7401            105             mov     a, #1
+00BB 93              106             movc    a, @a+DPTR
+00BC B4A507          107             cjne    A, #0xA5, _OTA_PROCESS_END
+00BF 7B5A            108             mov     R3,#0x5A
+00C1 759400          109             mov     CODEBANK,#0
+                     110                     
+00C4 8006            111             jmp     _OTA_PROCESS
+                     112     
+00C6                 113     _OTA_PROCESS_END:
+00C6 510B            114             call    F_ClrPWE
+00C8 6100            115             jmp     OTA_END
+                     116     
+00CA                 117     _OTA_PROCESS_Reset:
+00CA                 118     _OTA_PROCESS_FINISH:
+00CA 0100            119             jmp     0x0000  ; reset
+                     120     
+00CC                 121     _OTA_PROCESS:
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     3
+
+00CC 31F1            122             call    F_FlashSetting
+00CE 753603          123             mov     UpdateDPH, #(INTERRUPT_OFFSET>>8)
+                     124     
+00D1                 125         _OTA_PROCESS_Loop:
+00D1 75390A          126             mov     TryCount, #10
+00D4                 127         _OTA_PROCESS_Loop_ReTry:
+00D4 D53902          128             djnz    TryCount, _OTA_PROCESS_Erase
+00D7 8041            129             jmp     _OTA_PROCESS_FAIL
+                     130         
+00D9                 131         _OTA_PROCESS_Erase:
+00D9 853683          132             mov     DPH, UpdateDPH
+00DC 758200          133             mov     DPL, #0x00
+00DF 5104            134             call    F_SetPWE
+00E1 31CA            135             call    F_EraseSector
+                     136     
+                     137             ; if (UpdateDPH >= 0x80)
+                     138             ;   { SourceBank=2; SourceDPH=UpdateDPH;      TargetBank=0; TargetDPH=UpdateDPH; }
+                     139             ; else
+                     140             ;   { SourceBank=1; SourceDPH=UpdateDPH+0x80; TargetBank=0; TargetDPH=UpdateDPH; }
+00E3 E536            141             mov     a, UpdateDPH
+00E5 C3              142             clr     C
+00E6 9480            143             subb    a, #0x80
+00E8 400E            144             jc      _OTA_PROCESS_UPDATE_0000_7F00
+                     145     
+00EA                 146         _OTA_PROCESS_UPDATE_8000_FF00:
+00EA 753202          147             mov     SourceBank, #2
+00ED 853630          148             mov     SourceDPH, UpdateDPH
+00F0 753500          149             mov     TargetBank, #0
+00F3 853633          150             mov     TargetDPH, UpdateDPH
+00F6 800F            151             jmp     _OTA_PROCESS_UPDATE
+                     152     
+00F8                 153         _OTA_PROCESS_UPDATE_0000_7F00:
+00F8 753201          154             mov     SourceBank, #1
+00FB 7480            155             mov     a, #0x80
+00FD 2536            156             add     a, UpdateDPH
+00FF F530            157             mov     SourceDPH, a
+0101 753500          158             mov     TargetBank, #0
+0104 853633          159             mov     TargetDPH, UpdateDPH
+                     160     
+0107                 161         _OTA_PROCESS_UPDATE:
+0107 313D            162             call    F_Update256Bytes
+0109 70C9            163             jnz     _OTA_PROCESS_Loop_ReTry
+                     164     
+010B E536            165             mov     a, UpdateDPH
+010D B4FF06          166             cjne    a, #0xFF, _OTA_PROCESS_NEXT
+0110 7400            167             mov     A, #0x00
+0112 31FB            168             call    F_FlashControl                  
+0114 80B4            169             jmp     _OTA_PROCESS_FINISH
+                     170     
+0116                 171         _OTA_PROCESS_NEXT:
+0116 0536            172             inc     UpdateDPH
+0118 80B7            173             jmp     _OTA_PROCESS_Loop
+                     174             
+011A                 175         _OTA_PROCESS_FAIL:
+011A 8640            176             mov     Buffer+0, @R0
+011C 8841            177             mov     Buffer+1, R0
+011E 858342          178             mov     Buffer+2, DPH
+0121 858243          179             mov     Buffer+3, DPL
+0124 7400            180             mov     a, #0
+0126 93              181             movc    a, @a+DPTR
+0127 F544            182             mov     Buffer+4, a
+0129 754500          183             mov     Buffer+5, #0x00
+012C 7546EE          184             mov     Buffer+6, #0xEE
+012F 754711          185             mov     Buffer+7, #0x11
+0132 90FFF8          186             mov     DPTR, #0xFFF8
+0135 7408            187             mov     a, #8
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     4
+
+0137 5104            188             call    F_SetPWE
+0139 3192            189             call    F_Write_A_Bytes
+013B 80FE            190             jmp     $
+                     191     
+                     192     ;------------------------------------------------------------------------------
+                     193     ; Function: Update 256bytes SourceBank:SourceDPH:00 -> TargetBank:TargetDPH:00
+                     194     ;   R6: count
+                     195     ;   R5: DPL
+                     196     ;------------------------------------------------------------------------------
+013D                 197     F_Update256Bytes:
+013D 7D00            198             mov     R5, #0x00
+013F 7E10            199             mov     R6, #(256/16)
+                     200     
+0141                 201         _F_Update256Bytes_Loop:
+0141 853083          202             mov     DPH, SourceDPH
+0144 8D82            203             mov     DPL, R5
+0146 853294          204             mov     CODEBANK, SourceBank
+0149 316F            205             call    F_Read16Bytes
+                     206     
+014B 853383          207             mov     DPH, TargetDPH
+014E 8D82            208             mov     DPL, R5
+0150 853594          209             mov     CODEBANK, TargetBank
+0153 5104            210             call    F_SetPWE
+0155 3195            211             call    F_Write16Bytes
+                     212             
+0157 853383          213             mov     DPH, TargetDPH
+015A 8D82            214             mov     DPL, R5
+015C 853594          215             mov     CODEBANK, TargetBank
+015F 317C            216             call    F_Verify16Bytes
+0161 7009            217             jnz     _F_Update256Bytes_FAIL
+                     218     
+0163 ED              219             mov     a, R5
+0164 2410            220             add     a, #16
+0166 FD              221             mov     R5, a
+                     222     
+0167 DED8            223             djnz    R6, _F_Update256Bytes_Loop
+0169                 224         _F_Update256Bytes_PASS:
+0169 7400            225             mov     a, #0x00
+016B 22              226             ret
+016C                 227         _F_Update256Bytes_FAIL:        
+016C 74FF            228             mov     a, #0xFF
+016E 22              229             ret
+                     230     
+                     231     ;------------------------------------------------------------------------------
+                     232     ; Function: Read flash @DPTR 16bytes -> Buffer
+                     233     ;   R7: read count
+                     234     ;------------------------------------------------------------------------------
+016F                 235     F_Read16Bytes:
+016F 7840            236             mov     R0, #Buffer
+0171 7F10            237             mov     R7, #16
+0173                 238         _F_Read16Bytes_Loop:
+0173 7400            239             mov     a, #0
+0175 93              240             movc    a, @a+DPTR
+0176 F6              241             mov     @R0, a
+0177 A3              242             inc     DPTR
+0178 08              243             inc     R0
+0179 DFF8            244             djnz    R7, _F_Read16Bytes_Loop
+017B 22              245             ret
+                     246             
+                     247     ;------------------------------------------------------------------------------
+                     248     ; Function: Verify flash Buffer<->@DPTR 16bytes
+                     249     ;   R7: read count
+                     250     ;------------------------------------------------------------------------------
+017C                 251     F_Verify16Bytes:
+017C 7840            252             mov     R0, #Buffer
+017E 7F10            253             mov     R7, #16
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     5
+
+0180                 254         _F_Verify16Bytes_Loop:
+0180 863A            255             mov     ReadData, @R0
+0182 7400            256             mov     a, #0
+0184 93              257             movc    a, @a+DPTR
+0185 B53A07          258             cjne    a, ReadData, _F_Verify16Bytes_FAIL
+0188 A3              259             inc     DPTR
+0189 08              260             inc     R0
+018A DFF4            261             djnz    R7, _F_Verify16Bytes_Loop
+018C                 262         _F_Verify16Bytes_PASS:
+018C 7400            263             mov     a, #0x00
+018E 22              264             ret
+                     265     
+018F                 266         _F_Verify16Bytes_FAIL:
+018F 74FF            267             mov     a, #0xFF
+0191 22              268             ret
+                     269     
+                     270     ;------------------------------------------------------------------------------
+                     271     ; Function: Write ACC bytes Buffer -> @DPTR
+                     272     ;   R7: program count
+                     273     ;------------------------------------------------------------------------------
+0192                 274     F_Write_A_Bytes:
+0192 FF              275             mov     R7, a
+0193 8023            276             jmp     _F_Write_A_Bytes_Start
+                     277     
+                     278     ;------------------------------------------------------------------------------
+                     279     ; Function: Write 16 bytes Buffer -> @DPTR
+                     280     ;   R7: program count
+                     281     ;------------------------------------------------------------------------------
+0195                 282     F_Write16Bytes:
+0195 7401            283             mov     A, #0x01
+0197 31FB            284             call    F_FlashControl
+                     285     
+0199 E583            286             mov     a, DPH                  ;
+019B C3              287             clr     C                       ;
+019C 9403            288             subb    a, #(INTERRUPT_OFFSET>>8)       ;
+019E 4027            289             jc      _F_Write16Bytes_end     ; if (DPH<OTA_START_DPH) exit
+                     290     
+01A0 E5BA            291             mov     a,RSFLAG
+01A2 5407            292             anl     a,#0x07
+01A4 6002            293             jz      _CHECK_WDT2_
+                     294     ;        jmp     _OTA_PROCESS_END
+01A6 800A            295             jmp     _CHECK_R3_OTA_DATA2_
+                     296     
+01A8                 297         _CHECK_WDT2_:
+01A8 E5D8            298             mov     a,WDCON
+01AA 5404            299             anl     a,#0x04
+01AC 700A            300             jnz     _F_Write_START
+01AE 8002            301             jmp     _CHECK_R3_OTA_DATA2_
+                     302             
+01B0                 303         _F_Write16Bytes_STOP:
+01B0 01C6            304             jmp     _OTA_PROCESS_END
+                     305     
+01B2                 306         _CHECK_R3_OTA_DATA2_:
+01B2 745A            307             mov     a, #0x5A
+01B4 C3              308             clr     c
+01B5 9B              309             subb    a,R3
+01B6 70F8            310             jnz     _F_Write16Bytes_STOP    
+                     311     
+01B8                 312         _F_Write_A_Bytes_Start:
+01B8                 313         _F_Write_START:               
+01B8 7F10            314             mov     R7, #16
+01BA 7840            315             mov     R0, #Buffer
+01BC                 316         _F_Write16Bytes_Loop:
+01BC E6              317             mov     a, @R0
+01BD B4FF02          318             cjne    a, #0xFF, _F_Write16Bytes_Write
+01C0 8001            319             jmp     _F_Write16Bytes_Next
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     6
+
+01C2                 320         _F_Write16Bytes_Write:
+01C2 F0              321             movx    @dptr,a
+01C3                 322         _F_Write16Bytes_Next:
+01C3 A3              323             inc     dptr
+01C4 08              324             inc     R0
+01C5 DFF5            325             djnz    R7, _F_Write16Bytes_Loop
+                     326     
+01C7                 327         _F_Write16Bytes_end:
+01C7 510B            328             call    F_ClrPWE
+01C9 22              329             ret
+                     330     
+                     331     ;------------------------------------------------------------------------------
+                     332     ; Function: Erase Sector @DPTR
+                     333     ;------------------------------------------------------------------------------
+01CA                 334     F_EraseSector:
+01CA 7404            335             mov     A, #0x04
+01CC 31FB            336             call    F_FlashControl
+                     337     
+01CE E583            338             mov     a, DPH              ;
+01D0 C3              339             clr     C                   ;
+01D1 9403            340             subb    a, #(INTERRUPT_OFFSET>>8)   ;
+01D3 4019            341             jc      _F_EraseSector_end  ; if (DPH<OTA_START_DPH) exit
+                     342             
+01D5 E5BA            343             mov     a,RSFLAG
+01D7 5407            344             anl     a,#0x07
+01D9 6002            345             jz      _CHECK_WDT_
+01DB 800A            346             jmp     _CHECK_R3_OTA_DATA_
+                     347     
+01DD                 348         _CHECK_WDT_:
+01DD E5D8            349             mov     a,WDCON
+01DF 5404            350             anl     a,#0x04
+01E1 700A            351             jnz     _EraseSector_START
+01E3 8002            352             jmp     _CHECK_R3_OTA_DATA_
+                     353     
+01E5                 354         _F_EraseSector_STOP:
+01E5 01C6            355             jmp     _OTA_PROCESS_END
+                     356             
+01E7                 357         _CHECK_R3_OTA_DATA_:
+01E7 745A            358             mov     a, #0x5A
+01E9 C3              359             clr     c
+01EA 9B              360             subb    a,R3
+01EB 70F8            361             jnz     _F_EraseSector_STOP  
+                     362     
+01ED                 363         _EraseSector_START:                
+01ED F0              364             movx    @dptr,a
+01EE                 365         _F_EraseSector_end:
+01EE 510B            366             call    F_ClrPWE
+01F0 22              367             ret
+                     368     
+                     369     ;------------------------------------------------------------------------------
+                     370     ; Function: Flash setting
+                     371     ;------------------------------------------------------------------------------
+01F1                 372     F_FlashSetting:
+01F1 75EBAA          373             mov     ta, #0xaa
+01F4 75EB55          374             mov     ta, #0x55
+01F7 759B10          375             mov     flashtmr, #16
+01FA 22              376             ret
+                     377     
+                     378     ;------------------------------------------------------------------------------
+                     379     ; Function: write A to Flash control SFR
+                     380     ;------------------------------------------------------------------------------
+01FB                 381     F_FlashControl:
+01FB 75EBAA          382             mov     ta, #0xaa
+01FE 75EB55          383             mov     ta, #0x55
+0201 F59A            384             mov     flashctrl, a
+0203 22              385             ret
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     7
+
+                     386     
+                     387     ;------------------------------------------------------------------------------
+                     388     ; Function: PWE = 1
+                     389     ;------------------------------------------------------------------------------
+0204                 390     F_SetPWE:
+0204 E587            391             mov     a,pcon
+0206 D2E4            392             setb    acc.4
+0208 F587            393             mov     pcon,a
+020A 22              394             ret
+                     395     
+                     396     ;------------------------------------------------------------------------------
+                     397     ; Function: PWE = 0
+                     398     ;------------------------------------------------------------------------------
+020B                 399     F_ClrPWE:
+020B E587            400             mov     a,pcon
+020D C2E4            401             clr     acc.4
+020F F587            402             mov     pcon,a
+0211 22              403             ret
+                     404             
+                     405     ;------------------------------------------------------------------------------
+                     406     ; Function: Battery Detect (wait, until REGI high then 2.5V)
+                     407     ; 0x202B:
+                     408     ;   BIT7  BIT6  BIT5  BIT4  BIT3  BIT2  BIT1  BIT0
+                     409     ;   RGS   RGV1  RGV0  BDF   BVT2  BVT1  BVT0  BDS
+                     410     ; BVT[2:0] = 001 for 2.1V
+                     411     ; BVT[2:0] = 101 for 2.5V
+                     412     ; BVT[2:0] = 110 for 2.6V
+                     413     ;------------------------------------------------------------------------------
+0212                 414     F_BatteryDetect:
+0212 902038          415             mov     DPTR, #0x2038 ; RFT Test Register IV
+0215 7490            416             mov     a, #0x90      ; DSB=1, FBG=16
+0217 F0              417             movx    @DPTR, a
+0218 90202B          418             mov     DPTR, #0x202B ; Battery detect Register
+021B 7425            419             mov     a, #0x25      ; RGS=0b(VDDS=1.8V), RGV=01b(VDD_D,VDD_A=2.0V), BVT=001b(2.1V
+                             ), BDS=1
+021D F0              420             movx    @DPTR, a
+021E                 421         _F_BatteryDetectLoop:
+021E E0              422             movx    a, @DPTR
+021F 20E0FC          423             jb      acc.0, _F_BatteryDetectLoop
+0222 20E405          424             jb      acc.4, _F_BatteryDetect_BDF_1
+0225                 425         _F_BatteryDetect_BDF_0:       
+0225 512F            426             call    F_short_delay
+0227 7400            427             mov     a, #0
+0229 22              428             ret
+                     429                     
+022A                 430         _F_BatteryDetect_BDF_1:
+022A 512F            431             call    F_short_delay
+022C 7401            432             mov     a, #1
+022E 22              433             ret
+                     434     
+022F                 435     F_short_delay:
+022F 7C19            436             mov     R4, #25
+0231                 437         _F_short_delay_loop:
+0231 DCFE            438             djnz    R4, _F_short_delay_loop
+0233 22              439             ret
+                     440     
+                     441     ;------------------------------------------------------------------------------
+                     442     ; OTA END
+                     443     ;------------------------------------------------------------------------------
+----                 444                     CSEG    at       INTERRUPT_OFFSET
+0300                 445     OTA_END:
+0300 020000   F      446             LJMP    STARTUP1
+                     447     
+                     448             end
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     8
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E                          T Y P E  V A L U E   ATTRIBUTES
+
+ACC . . . . . . . . . . . . . .  D ADDR   00E0H   A   
+BDCOUNTH. . . . . . . . . . . .  N NUMB   0038H   A   
+BDCOUNTL. . . . . . . . . . . .  N NUMB   0037H   A   
+BUFFER. . . . . . . . . . . . .  N NUMB   0040H   A   
+CODEBANK. . . . . . . . . . . .  D ADDR   0094H   A   
+DPH . . . . . . . . . . . . . .  D ADDR   0083H   A   
+DPL . . . . . . . . . . . . . .  D ADDR   0082H   A   
+EIE . . . . . . . . . . . . . .  D ADDR   00E8H   A   
+EIF . . . . . . . . . . . . . .  D ADDR   0091H   A   
+FLASHCTRL . . . . . . . . . . .  D ADDR   009AH   A   
+FLASHTMR. . . . . . . . . . . .  D ADDR   009BH   A   
+F_BATTERYDETECT . . . . . . . .  C ADDR   0212H   A   
+F_CLRPWE. . . . . . . . . . . .  C ADDR   020BH   A   
+F_ERASESECTOR . . . . . . . . .  C ADDR   01CAH   A   
+F_FLASHCONTROL. . . . . . . . .  C ADDR   01FBH   A   
+F_FLASHSETTING. . . . . . . . .  C ADDR   01F1H   A   
+F_READ16BYTES . . . . . . . . .  C ADDR   016FH   A   
+F_SETPWE. . . . . . . . . . . .  C ADDR   0204H   A   
+F_SHORT_DELAY . . . . . . . . .  C ADDR   022FH   A   
+F_UPDATE256BYTES. . . . . . . .  C ADDR   013DH   A   
+F_VERIFY16BYTES . . . . . . . .  C ADDR   017CH   A   
+F_WRITE16BYTES. . . . . . . . .  C ADDR   0195H   A   
+F_WRITE_A_BYTES . . . . . . . .  C ADDR   0192H   A   
+IAP_PROCESS_ADDRESS . . . . . .  N NUMB   007BH   A   
+IE. . . . . . . . . . . . . . .  D ADDR   00A8H   A   
+INTERRUPT_OFFSET. . . . . . . .  N NUMB   0300H   A   
+OTA_BEGIN . . . . . . . . . . .  C ADDR   007BH   A   
+OTA_END . . . . . . . . . . . .  C ADDR   0300H   A   
+P0OE. . . . . . . . . . . . . .  D ADDR   00D1H   A   
+P0PUN . . . . . . . . . . . . .  D ADDR   00D2H   A   
+PCON. . . . . . . . . . . . . .  D ADDR   0087H   A   
+READDATA. . . . . . . . . . . .  N NUMB   003AH   A   
+RSFLAG. . . . . . . . . . . . .  D ADDR   00BAH   A   
+SOURCEBANK. . . . . . . . . . .  N NUMB   0032H   A   
+SOURCEDPH . . . . . . . . . . .  N NUMB   0030H   A   
+SOURCEDPL . . . . . . . . . . .  N NUMB   0031H   A   
+SP. . . . . . . . . . . . . . .  D ADDR   0081H   A   
+STARTUP1. . . . . . . . . . . .  C ADDR   -----       EXT
+TA. . . . . . . . . . . . . . .  D ADDR   00EBH   A   
+TARGETBANK. . . . . . . . . . .  N NUMB   0035H   A   
+TARGETDPH . . . . . . . . . . .  N NUMB   0033H   A   
+TARGETDPL . . . . . . . . . . .  N NUMB   0034H   A   
+TRYCOUNT. . . . . . . . . . . .  N NUMB   0039H   A   
+UPDATEDPH . . . . . . . . . . .  N NUMB   0036H   A   
+WDCON . . . . . . . . . . . . .  D ADDR   00D8H   A   
+_CHECK_R3_OTA_DATA2_. . . . . .  C ADDR   01B2H   A   
+_CHECK_R3_OTA_DATA_ . . . . . .  C ADDR   01E7H   A   
+_CHECK_WDT2_. . . . . . . . . .  C ADDR   01A8H   A   
+_CHECK_WDT_ . . . . . . . . . .  C ADDR   01DDH   A   
+_ERASESECTOR_START. . . . . . .  C ADDR   01EDH   A   
+_F_BATTERYDETECTLOOP. . . . . .  C ADDR   021EH   A   
+_F_BATTERYDETECT_BDF_0. . . . .  C ADDR   0225H   A   
+_F_BATTERYDETECT_BDF_1. . . . .  C ADDR   022AH   A   
+_F_ERASESECTOR_END. . . . . . .  C ADDR   01EEH   A   
+_F_ERASESECTOR_STOP . . . . . .  C ADDR   01E5H   A   
+_F_READ16BYTES_LOOP . . . . . .  C ADDR   0173H   A   
+_F_SHORT_DELAY_LOOP . . . . . .  C ADDR   0231H   A   
+_F_UPDATE256BYTES_FAIL. . . . .  C ADDR   016CH   A   
+_F_UPDATE256BYTES_LOOP. . . . .  C ADDR   0141H   A   
+_F_UPDATE256BYTES_PASS. . . . .  C ADDR   0169H   A   
+A51 MACRO ASSEMBLER  OTA_IAP                                                              11/05/2018 10:15:36 PAGE     9
+
+_F_VERIFY16BYTES_FAIL . . . . .  C ADDR   018FH   A   
+_F_VERIFY16BYTES_LOOP . . . . .  C ADDR   0180H   A   
+_F_VERIFY16BYTES_PASS . . . . .  C ADDR   018CH   A   
+_F_WRITE16BYTES_END . . . . . .  C ADDR   01C7H   A   
+_F_WRITE16BYTES_LOOP. . . . . .  C ADDR   01BCH   A   
+_F_WRITE16BYTES_NEXT. . . . . .  C ADDR   01C3H   A   
+_F_WRITE16BYTES_STOP. . . . . .  C ADDR   01B0H   A   
+_F_WRITE16BYTES_WRITE . . . . .  C ADDR   01C2H   A   
+_F_WRITE_A_BYTES_START. . . . .  C ADDR   01B8H   A   
+_F_WRITE_START. . . . . . . . .  C ADDR   01B8H   A   
+_OTA_BATTERYDETECT. . . . . . .  C ADDR   0090H   A   
+_OTA_PROCESS. . . . . . . . . .  C ADDR   00CCH   A   
+_OTA_PROCESS_CHECK_BANK_CODE_LH  C ADDR   00AEH   A   
+_OTA_PROCESS_CHECK_CODE_H . . .  C ADDR   00A8H   A   
+_OTA_PROCESS_CHECK_CODE_L . . .  C ADDR   00A3H   A   
+_OTA_PROCESS_END. . . . . . . .  C ADDR   00C6H   A   
+_OTA_PROCESS_ERASE. . . . . . .  C ADDR   00D9H   A   
+_OTA_PROCESS_FAIL . . . . . . .  C ADDR   011AH   A   
+_OTA_PROCESS_FINISH . . . . . .  C ADDR   00CAH   A   
+_OTA_PROCESS_LOOP . . . . . . .  C ADDR   00D1H   A   
+_OTA_PROCESS_LOOP_RETRY . . . .  C ADDR   00D4H   A   
+_OTA_PROCESS_NEXT . . . . . . .  C ADDR   0116H   A   
+_OTA_PROCESS_RESET. . . . . . .  C ADDR   00CAH   A   
+_OTA_PROCESS_UPDATE . . . . . .  C ADDR   0107H   A   
+_OTA_PROCESS_UPDATE_0000_7F00 .  C ADDR   00F8H   A   
+_OTA_PROCESS_UPDATE_8000_FF00 .  C ADDR   00EAH   A   
+_OTA_START. . . . . . . . . . .  C ADDR   00A0H   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

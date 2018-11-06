@@ -1,0 +1,55 @@
+A51 MACRO ASSEMBLER  OTA_DATA                                                             11/05/2018 10:15:37 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02b
+OBJECT MODULE PLACED IN .\OTA_Data.obj
+ASSEMBLER INVOKED BY: D:\Keil_v5\C51\BIN\A51.EXE ..\UserData\OTA_Data.a51 SET(LARGE) DEBUG PRINT(.\OTA_Data.lst) OBJECT(
+                      .\OTA_Data.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     ;/*****************************************************************************
+                       2     ;**               AMICCOM Electronics Corporation Document                   **
+                       3     ;**          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+                       4     ;**                                                                          **
+                       5     ;**      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+                       6     ;**                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+                       7     ;**                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+                       8     ;**         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+                       9     ;*****************************************************************************/
+                      10     
+                      11     NAME    OTA_DATA
+                      12     
+----                  13     CSEG AT 0x7FF4
+                      14     
+                      15     ;================================================ User Modify =============================
+                             ====================
+                      16     
+                      17         ; Customer Version (4 Byte)
+7FF4 00000000         18             DB  0x00, 0x00, 0x00, 0x00
+                      19     
+                      20         ; Product Version (4 Byte)
+7FF8 00000001         21             DB  0x00, 0x00, 0x00, 0x01
+                      22     
+                      23         ; Firmware Version (4 Byte)
+7FFC 00000000         24             DB  0x00, 0x00, 0x00, 0x00 
+                      25     
+                      26     ;================================================= Modify END =============================
+                             ====================
+                      27            
+                      28     END
+A51 MACRO ASSEMBLER  OTA_DATA                                                             11/05/2018 10:15:37 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+OTA_DATA . . . . .  N NUMB   -----       
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

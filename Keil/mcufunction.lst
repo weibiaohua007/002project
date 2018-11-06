@@ -1,0 +1,82 @@
+C51 COMPILER V9.53.0.0   MCUFUNCTION                                                       11/05/2018 10:15:36 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE MCUFUNCTION
+OBJECT MODULE PLACED IN .\mcufunction.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE ..\source\mcufunction.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(
+                    -0X0300) INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\mcufunction.lst) TABS(2) OBJECT(.\mcufunctio
+                    -n.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "A8107.h"
+  12          #include "LibFunction.h"
+  13          
+  14          void InitMCU(void);
+  15          /*********************************************************************
+  16          ** InitMCU
+  17          *********************************************************************/
+  18          void InitMCU(void)
+  19          {
+  20   1          uint16_t idata i;
+  21   1      
+  22   1          P0    = 0xFF;
+  23   1          P0OE  = 0x00;
+  24   1          P0PUN = 0x00;
+  25   1          P0WUN = 0xFF;
+  26   1          
+  27   1          P1    = 0xFF;
+  28   1          P1OE  = 0x00;
+  29   1          P1PUN = 0x00;
+  30   1          P1WUN = 0xFF;
+  31   1      
+  32   1          P2    = 0xFF;
+  33   1          P2OE  = 0x00;
+  34   1          P2PUN = 0x00;
+  35   1          P2WUN = 0xFF;
+  36   1          
+  37   1          P3    = 0xFF;
+  38   1          P3OE  = 0x00;
+  39   1          P3PUN = 0x00;
+  40   1          P3WUN = 0xFF;
+  41   1      
+  42   1          //clear XData RAM
+  43   1          for (i = 0x0000; i < 0x2000; i++)
+  44   1              XBYTE[i] = 0x00;
+  45   1      
+  46   1          /*********************************************/
+  47   1          /*    MCU Frequency setting (Dont Modify)    */
+  48   1          PCONE |= 0x01;  //SYSCLK = 16MHz / 2 = 8MHz  */
+  49   1          PCON  = (PCON&0xEF) | 0x01;  //Enable CKSE   */  
+  50   1          RSFLAG = 0x07;  //CLEAR PORF,RESETNF         */
+  51   1          /*********************************************/
+  52   1      
+  53   1          check_stable = 0x5AA5;
+C51 COMPILER V9.53.0.0   MCUFUNCTION                                                       11/05/2018 10:15:36 PAGE 2   
+
+  54   1      }
+  55          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     98    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----       2
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

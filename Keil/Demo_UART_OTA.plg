@@ -1,0 +1,11 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Project:</h2>
+D:\Project\A8507\Gen2\demo kit\A8107_Multi-function_GEN2_V0.8.4_20161129(LCD On+timer+temp for A8507 U01)\Keil\Demo_UART_OTA.uvproj
+Project File Date:  <unknown>
+
+<h2>Output:</h2>
+Clean started: Project: 'Demo_UART_OTA'
+   deleting intermediate output files for target 'Target 1'

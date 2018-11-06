@@ -1,0 +1,1173 @@
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN_UART
+OBJECT MODULE PLACED IN .\main_UART.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\source\main_UART.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(0X030
+                    -0) INCDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\main_UART.lst) TABS(2) OBJECT(.\main_UART.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2015 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "A8107.h"
+  12          #include "LibFunction.h"
+  13          #include "mcufunction.h"
+  14          #include "IAP.h"
+  15          #include "servicegen.h"
+  16          #include "OTA.h"
+  17          
+  18          #include "..\Uart_OTA\UartOTAFunction.h"
+  19          
+  20          uint8_t xdata   auth_req;
+  21          uint8_t xdata   init_req;
+  22          uint8_t xdata   index;
+  23          uint8_t xdata   auth_init_finish;
+  24          uint8_t xdata   scale_index;
+  25          uint8_t xdata   KeyWakeup;
+  26          uint8_t xdata sendscaledata;
+  27          uint8_t xdata waitpacket;
+  28          
+  29          #ifdef _PROFILE_TAOBAO_
+              uint8_t xdata sendscaledata;
+              uint8_t xdata scalebuf[10];
+              uint16_t xdata weightvalue;
+              uint32_t xdata  datevalue;
+              #endif
+  35          
+  36          #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_MOUSE_
+              uint8_t xdata HID_report_MS_key_temp;
+              uint8_t xdata mousedata;
+              #endif
+              #ifdef _PROFILE_HOGP_KEYBOARD_
+              uint8_t xdata HID_report_KB_key_temp;
+              uint8_t xdata presskey07;
+              #endif
+              #ifdef _PROFILE_HOGP_COMSUMER_
+              uint8_t xdata presskey06; 
+              #endif
+              #endif
+  49          
+  50          
+  51          #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_MOUSE_
+              void MouseDemo(void);
+              #endif
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 2   
+
+              #endif
+  56          
+  57          #ifdef _PROFILE_TAOBAO_
+              uint8_t toascii(uint32_t in, uint8_t unit);
+              void Prcss_Weight(void);
+              #endif
+  61          
+  62          #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_COMSUMER_
+              #define HDL_HIDS_REPORT_TAB_CSKEY_L                             0
+              #define HDL_HIDS_REPORT_TAB_CSKEY_H                             1
+              #endif
+              
+              #ifdef _PROFILE_HOGP_MOUSE_
+              #define HDL_HIDS_REPORT_TAB_KEY_L_R                             0
+              #define HDL_HIDS_REPORT_TAB_DIR_L_R_L                           1
+              #define HDL_HIDS_REPORT_TAB_DIR_L_R_H                           2
+              #define HDL_HIDS_REPORT_TAB_DIR_U_D_L                           3
+              #define HDL_HIDS_REPORT_TAB_DIR_U_D_H                           4
+              #define HDL_HIDS_REPORT_TAB_ROL_U_D                             5
+              #endif
+              
+              #ifdef _PROFILE_HOGP_KEYBOARD_
+              #define HDL_HIDS_REPORT_TAB_KEY_CTRL                            0
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA0                           2
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA1                           3
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA2                           4
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA3                           5
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA4                           6
+              #define HDL_HIDS_REPORT_TAB_KEY_DATA5                           7
+              #endif
+              #endif
+  87          
+  88          #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_COMSUMER_
+              const uint8_t code HID_RPT_CS_KEY_DEMO[][2] =
+              {
+                  {0xE9, 0x00,},  //vol+
+                  {0xEA, 0x00,},  //vol-
+                  {0xE2, 0x00,},  //Mute
+                  {0xB0, 0x00,},  //Play
+                  {0xB1, 0x00,},  //Pause
+                  //{0xB2, 0x00,},  //Record
+                  {0xB3, 0x00,},  //Fast forward
+                  {0xB4, 0x00,},  //Rewind
+                  {0xB5, 0x00,},  //Scan next track
+                  {0xB6, 0x00,},  //Scan previous track
+                  {0xB7, 0x00,},  //Stop
+                  {0xB8, 0x00,},  //Eject
+                  {0x8A, 0x01,},  //Email reader
+                  {0x96, 0x01,},  //Internet browser
+                  {0x9E, 0x01,},  //Terminal lock/screensaver
+                  {0xC6, 0x01,},  //Research/search browser
+                  {0x2D, 0x02,},  //Zoom in
+              };
+              #endif
+              #endif
+ 112          
+ 113          #ifdef _PROFILE_TAOBAO_
+              const uint8_t code auth_data_taobao[60]=
+              {
+                  0x03, 0x00, 0x26, 0xFE, 0x01, 0x00, 0x26, 0x27,
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 3   
+
+                  0x11, 0x00, 0x01, 0x0A, 0x00, 0x12, 0x10, 0x8A,
+                  0xB7, 0x40, 0x66, 0x48,                   
+                  0x7C, 0x9A, 0xDE, 0x17, 0x5B, 0x80, 0xD7, 0xD7,
+                  0x0C, 0x83, 0x0B, 0x18, 0x83, 0x80, 0x04, 0x20,
+                  0x01, 0x28, 0x01, 0x32,                   
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00
+              };
+              
+              const uint8_t code init_data_taobao[20]=
+              {
+                  0x03, 0x00, 0x0D, 0xFE, 0x01, 0x00, 0x0D, 0x27,
+                  0x13, 0x00, 0x02, 0x0A, 0x00, 0x12, 0x01, 0x7F,
+                  0x00, 0x00, 0x00, 0x00
+              };
+              
+              const uint8_t code send_test_data_taobao[60]=
+              {
+                  0x03, 0x00, 0x36, 0xFE, 0x01, 0x00, 0x36, 0x27,
+                  0x12, 0x00, 0x03, 0x0A, 0x00, 0x12, 0x2A, 0x43,
+                  0x43, 0x30, 0x37, 0x39,                   
+                  0x36, 0x37, 0x34, 0x32, 0x34, 0x45, 0x46, 0x45,
+                  0x39, 0x33, 0x31, 0x33, 0x30, 0x33, 0x38, 0x32,
+                  0x30, 0x30, 0x30, 0x34,                   
+                  0x31, 0x33, 0x30, 0x33, 0x31, 0x33, 0x36, 0x34,
+                  0x31, 0x33, 0x30, 0x33, 0x30, 0x33, 0x31, 0x30,
+                  0x38, 0x00, 0x00, 0x00
+              };
+              
+              const uint8_t code scale_data_init[10]=
+              {
+                  0x01, 0x30, 0x30, 0x30, 0x30, 0x42, 0x46, 0x38,
+                  0x33, 0x43,
+              };
+              
+              static const char ascii[] = "0123456789ABCDEF";
+              
+              const uint8_t code send_scale_data[60]=
+              {
+                  0x03, 0x00, 0x34, 0xFE, 0x01, 0x00, 0x34, 0x27,
+                  0x12, 0x00, 0x00, 0x0A, 0x00, 0x12, 0x26, 0x43,
+                  0x33, 0x46, 0x45, 0x30,                   
+                  0x30, 0x30, 0x36, 0x45, 0x30, 0x35, 0x35, 0x44,
+                  0x36, 0x42, 0x34, 0x43, 0x41, 0x46, 0x46, 0x30,
+                  0x30, 0x30, 0x30, 0x30,                   
+                  0x30, 0x46, 0x46, 0x30, 0x30, 0x30, 0x30, 0x30,
+                  0x30, 0x30, 0x30, 0x30, 0x39, 0x18, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00
+              };
+              #endif
+ 168          
+ 169          #ifdef _PROFILE_WECHAT_
+              const uint8_t code auth_data_wechat[26]=
+              {
+                  0xFE, 0x01, 0x00, 0x1A, 0x27, 0x11, 0x00, 0x01,
+                  0x0A, 0x00, 0x18, 0x80, 0x80, 0x04, 0x20, 0x01,
+                  0x28, 0x02, 0x3A, 0x06, 0xD0, 0x39, 0x72, 0xA5,
+                  0xEF, 0x24
+              };
+              
+              const uint8_t code init_data_wechat[19]=
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 4   
+
+              {
+                  0xFE, 0x01, 0x00, 0x13, 0x27, 0x13, 0x00, 0x02,
+                  0x0A, 0x00, 0x1A, 0x04, 0x30, 0x37, 0x31, 0x35,
+                  0x12, 0x01, 0x41
+              };
+              
+              const uint8_t code send_test_data_wechat[19]=
+              {
+                  0xFE, 0x01, 0x00, 0x13, 0x27, 0x12, 0x00, 0x02,
+                  0x0A, 0x00, 0x1A, 0x04, 0x30, 0x37, 0x31, 0x35,
+                  0x12, 0x01, 0x41
+              };
+              
+              #ifdef _PROFILE_WECHAT_SIMPLE_MODE_
+              const uint8_t code current_step_data[4] =
+              {
+                  0x01, 0x10, 0x27, 0x00
+              };
+              
+              const uint8_t code current_total_data[10]=
+              {
+                  0x07, 0x10, 0x27, 0x00, 0x70, 0x17, 0x00, 0x00,
+                  0x22, 0x33
+              };
+              
+              const uint8_t code target_data[19]=
+              {
+                  0xFE, 0x01, 0x00, 0x13, 0x27, 0x12, 0x00, 0x02,
+                  0x0A, 0x00, 0x1A, 0x04, 0x30, 0x37, 0x31, 0x35,
+                  0x12, 0x01, 0x41
+              };
+              #endif
+              #endif
+ 212          /*******************************************************************
+ 213           *
+ 214           * main - main function
+ 215           * Description:
+ 216           *      The function is the system entry point. The whole system is
+ 217           *      start from here.
+ 218           *
+ 219           ******************************************************************/
+ 220          void main(void)
+ 221          {
+ 222   1          ADV_InitDef ADV_InitStructure;
+ 223   1      
+ 224   1          uint8_t xdata   Temp;
+ 225   1          uint8_t xdata   UpdateOTASpeed;
+ 226   1          uint8_t xdata   DataLen;
+ 227   1          uint8_t xdata   AdvFastSpeed = ENABLE;
+ 228   1          uint8_t xdata   *ptrChar = NULL;
+ 229   1          uint8_t xdata   result, i;
+ 230   1          uint16_t xdata  waitpacket_tmp=0, waitpacket_tmp1=0, waitpacket_tmp2=0;
+ 231   1          
+ 232   1          uint8_t xdata   Uart_OTA_Flag;
+ 233   1          uint8_t xdata   Uart_OTA_Start;
+ 234   1      
+ 235   1      
+ 236   1          //while(~P0_4);
+ 237   1      
+ 238   1          InterruptDisable();
+ 239   1          InitMCU();
+ 240   1          
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 5   
+
+ 241   1          internalRC = 0; //0 :Using External RC 32.768KHz ; 1:Using internal RC 32.000KHz
+ 242   1      
+ 243   1          InitCrystalCL(0x32);  //AMICCOM CrystalCL 0x32(MD8107-A05)(18pF)/ 0x14(MD8107-A06)(12pF)/ 0x0D(9pF)
+ 244   1          InitRF();
+ 245   1          IAP_Initialize();
+ 246   1          OTA_Initialize();
+ 247   1      
+ 248   1          InitBLE();
+ 249   1          BLE_SetTxPower(6); //level 0 ~ 7 : 0 => -17dBm; 1 => -15dBm; 2 => -10dBm; 3 => -5dBm; 4 => 0dBm; 5 => 
+             -2dBm; 6 => 4dBm; 7 => 7dBm
+ 250   1          InterruptEnable();
+ 251   1      
+ 252   1      #ifdef _PROFILE_TAOBAO_
+                  for(i=0;i<10;i++)
+                      scalebuf[i]=scale_data_init[i];
+              
+                  weightvalue=0;
+                  datevalue=559240;
+                  datevalue=788888;
+              #endif
+ 260   1            RF_Timer500ms(ENABLE);
+ 261   1      
+ 262   1          OTA_RECONNECT_FLAG = DISABLE;
+ 263   1          Uart_OTA_Flag = 0;
+ 264   1          Uart_OTA_Start = 0;
+ 265   1      
+ 266   1          while(1)
+ 267   1          {
+ 268   2              if (Uart_OTA_Flag==0)
+ 269   2              {
+ 270   3                  OTA_Process();
+ 271   3          
+ 272   3                  /* User Can Add Code */
+ 273   3          
+ 274   3                  if(ble_state == STANDBY_STATE)
+ 275   3                  {
+ 276   4                      ADV_InitStructure.ADV_Timing = 0; // ADV Interval = (20ms + 0.625ms*ADV_Timing) = 20ms
+ 277   4                      ADV_InitStructure.ADV_TO = 1500;  // ADV Timeout = ADV Interval * ADV_TO = 20ms*1500 = 30 
+             -sec
+ 278   4                      ADV_InitStructure.ADV_Channel = (TE_ADVCHANNEL)(ADV_CH37);// | ADV_CH38 | ADV_CH39);
+ 279   4                      ADV_InitStructure.ADV_Type = ADV_IND;
+ 280   4                      ADV_InitStructure.ADV_RndEnable = DISABLE;
+ 281   4                      ADV_InitStructure.ADV_TOEnable = ENABLE;
+ 282   4                      ADV_InitStructure.ADV_Run = ENABLE;
+ 283   4                      BLE_ADV_Cmd(&ADV_InitStructure);
+ 284   4          
+ 285   4      #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_MOUSE_
+                              HID_report_MS_key_temp = 0x00;
+                              mousedata = 0;
+              #endif
+              #ifdef _PROFILE_HOGP_KEYBOARD_
+                              presskey07 = 0;
+              #endif
+              #ifdef _PROFILE_HOGP_COMSUMER_
+                              presskey06 = 0;
+              #endif
+              #endif
+ 297   4      
+ 298   4      #ifdef _PROFILE_WECHAT_
+              #ifdef _PROFILE_WECHAT_SIMPLE_MODE_
+                              for(i=0;i<10;i++)
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 6   
+
+                                  att_HDL_WECHAT_SIMPLEMODE_DATRWI[i] = current_total_data[i];
+                              att_HDL_WECHAT_SIMPLEMODE_DATRWI[20] = 10;
+              #endif
+              #endif
+ 305   4                      auth_req = FAIL;
+ 306   4                      init_req = FAIL;
+ 307   4                      auth_init_finish = FAIL;
+ 308   4                      index = 0;
+ 309   4                      scale_index = 0;
+ 310   4                      KeyWakeup = 0;
+ 311   4                      sendscaledata = FAIL;
+ 312   4                      waitpacket=0;
+ 313   4                  }
+ 314   3                  else if(ble_state == ADV_STATE)
+ 315   3                  {
+ 316   4                      UpdateOTASpeed = ENABLE;
+ 317   4                  }
+ 318   3                  else if(ble_state == CONNECT_ESTABLISH_STATE)
+ 319   3                  {
+ 320   4                      if (UpdateOTASpeed)
+ 321   4                      {
+ 322   5                          Temp = (uint8_t)OTA_UpdataSpeed();
+ 323   5          
+ 324   5                          if ((OTA_SUCCESSFUL == Temp) || (OTA_COUNT_MAX == Temp))
+ 325   5                              UpdateOTASpeed = DISABLE;
+ 326   5                      } /* Changing OTA download speeds */
+ 327   4          
+ 328   4                      if (BLE_writeEventFlag)
+ 329   4                      {
+ 330   5                          ptrChar = BLE_GetWriteEvent();
+ 331   5                          DataLen = BLE_GetWriteEvent_Length();
+ 332   5          
+ 333   5                          if (ptrChar == &att_HDL_OTA_OTA_DATA)
+ 334   5                          {
+ 335   6                              OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_DATA, DataLen);
+ 336   6                              OTA_Process();
+ 337   6                          } /* Characteristic Data below the OTA Service */
+ 338   5                          else if (ptrChar == &att_HDL_OTA_OTA_CMD_CONTROL_POINT)
+ 339   5                          {
+ 340   6                              OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_CMD_CONTROL_POINT, DataLen);
+ 341   6                              OTA_Process();
+ 342   6                          } /* Characteristic Command below the OTA Service */
+ 343   5      #ifdef _PROFILE_TAOBAO_
+                                  else if(ptrChar == &att_HDL_TAOBAO_DATW)
+                                  {
+                                      if(waitpacket==0)
+                                      {
+                                          if(att_HDL_TAOBAO_DATW[7]==0x4E)
+                                          {
+                                              waitpacket_tmp1=att_HDL_TAOBAO_DATW[1];
+                                              waitpacket_tmp2=att_HDL_TAOBAO_DATW[2];
+                                              waitpacket_tmp=((waitpacket_tmp1<<8)|(waitpacket_tmp2))+3;
+                                              
+                                              if((waitpacket_tmp%20)==0)
+                                                  waitpacket=((waitpacket_tmp)/20)-1;
+                                              else if((waitpacket_tmp%20)!=0)
+                                                  waitpacket=((waitpacket_tmp+3)/20);
+                                              else
+                                                  ;
+                                              
+                                              switch(att_HDL_TAOBAO_DATW[8])
+                                              {
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 7   
+
+                                                  case 0x21:
+                                                      auth_req = PASS;
+                                                      break;
+                                                  
+                                                  case 0x22:
+                                                      auth_init_finish = PASS;
+                                                      break;
+                                                  
+                                                  case 0x23:
+                                                      init_req = PASS;
+                                                      break;
+                                                  
+                                                  default:
+                                                      break;
+                                              }
+                                          }
+                                          else
+                                               ;
+                                      }
+                                      else
+                                      {
+                                          waitpacket--;
+                                      }
+                                  }
+              #endif
+ 388   5      #ifdef _PROFILE_WECHAT_
+              #ifndef _PROFILE_WECHAT_SIMPLE_MODE_
+                                  else if(ptrChar == &att_HDL_WECHAT_DATW)//WeChat
+                                  {
+                                      if(waitpacket==0)
+                                      {
+                                          if(att_HDL_WECHAT_DATW[4]==0x4E)
+                                          {
+                                              waitpacket_tmp1=att_HDL_WECHAT_DATW[2];
+                                              waitpacket_tmp2=att_HDL_WECHAT_DATW[3];
+                                              waitpacket_tmp=((waitpacket_tmp1<<8)|(waitpacket_tmp2));
+                                              
+                                              if((waitpacket_tmp%20)==0)
+                                                  waitpacket=((waitpacket_tmp)/20)-1;
+                                              else if((waitpacket_tmp%20)!=0)
+                                                  waitpacket=((waitpacket_tmp)/20);
+                                              else
+                                                  ;
+                                              
+                                              switch(att_HDL_WECHAT_DATW[5])
+                                              {
+                                                  case 0x21:
+                                                      auth_req = PASS;
+                                                      break;
+                                              
+                                                  case 0x22:
+                                                      auth_init_finish = PASS;
+                                                      break;
+                                              
+                                                  case 0x23:
+                                                      init_req = PASS;
+                                                      break;
+                                              
+                                                  default:
+                                                      break;
+                                              }
+                                          }
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 8   
+
+                                          else if(att_HDL_WECHAT_DATW[4]==0x75)
+                                          {
+                                              waitpacket_tmp1=att_HDL_WECHAT_DATW[2];
+                                              waitpacket_tmp2=att_HDL_WECHAT_DATW[3];
+                                              waitpacket_tmp=((waitpacket_tmp1<<8)|(waitpacket_tmp2));
+                                              
+                                              if((waitpacket_tmp%20)==0)
+                                                  waitpacket=((waitpacket_tmp)/20)-1;
+                                              else if((waitpacket_tmp%20)!=0)
+                                                  waitpacket=((waitpacket_tmp)/20);
+                                              else
+                                                  ;
+                                              
+                                              switch(att_HDL_WECHAT_DATW[5])
+                                              {
+                                                  case 0x31:
+                                                      _nop_();
+                                                      break;
+                                                      
+                                                  case 0x32:
+                                                      _nop_();
+                                                      break;
+                                                      
+                                                  case 0x33:
+                                                      _nop_();
+                                                      break;
+                                                      
+                                                  default:
+                                                      break;
+                                              }
+                                          }
+                                          else
+                                              ;
+                                      }
+                                      else
+                                      {
+                                            waitpacket--;
+                                      }
+                                  }
+              #else
+                                  else if(ptrChar == &att_HDL_WECHAT_SIMPLEMODE_DATRWI)//WeChat_Simple//手機寫步數
+                                  {
+                                      switch(att_HDL_WECHAT_SIMPLEMODE_DATRWI[0])
+                                      {
+                                          case 0x01:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,4);
+                                              break;
+                                          
+                                          case 0x02:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,4);
+                                              break;
+                                          
+                                          case 0x03:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,7);
+                                              break;
+                                          
+                                          case 0x04:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,4);
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 9   
+
+                                              break;
+                                          
+                                          case 0x05:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,7);
+                                              break;
+                                          
+                                          case 0x06:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,7);
+                                              break;
+                                          
+                                          case 0x07:
+                                              result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMP
+             -LEMODE_DATRWI_INIT,10);
+                                              break;
+                                          
+                                          default:
+                                              break;
+                                      }
+                                  }
+              #endif
+              #endif
+ 503   5      #ifdef _PROFILE_USER_DEFINE_01_
+ 504   5                          else if(ptrChar == &att_HDL_USER_DEFINE_01_DATAW01)
+ 505   5                          {
+ 506   6                              if((att_HDL_USER_DEFINE_01_DATAN01_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_D
+             -ESCRIPTORS_CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+ 507   6                              {
+ 508   7                                  for(i=0;i<20;i++)
+ 509   7                                        att_HDL_USER_DEFINE_01_DATAN01[i] = att_HDL_USER_DEFINE_01_DATAW01[i];
+ 510   7                                  
+ 511   7                                  result = BLE_SendData(att_HDL_USER_DEFINE_01_DATAN01,ATT_HDL_USER_DEFINE_01_DA
+             -TAN01_INIT,5);
+ 512   7                                  
+ 513   7                                  if(result == SUCCESS)
+ 514   7                                  {
+ 515   8                                      _nop_();
+ 516   8                                  }
+ 517   7                                  else
+ 518   7                                  {
+ 519   8                                      _nop_();
+ 520   8                                  }
+ 521   7                              }                    
+ 522   6                          }
+ 523   5                          else if(ptrChar == &att_HDL_USER_DEFINE_01_DATAW02)
+ 524   5                          {
+ 525   6                              if((att_HDL_USER_DEFINE_01_DATAN02_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_D
+             -ESCRIPTORS_CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+ 526   6                              {
+ 527   7                                  for(i=0;i<20;i++)
+ 528   7                                      att_HDL_USER_DEFINE_01_DATAN02[i] = att_HDL_USER_DEFINE_01_DATAW02[i];
+ 529   7                                  
+ 530   7                                  result = BLE_SendData(att_HDL_USER_DEFINE_01_DATAN02,ATT_HDL_USER_DEFINE_01_DA
+             -TAN02_INIT,5);
+ 531   7                                  
+ 532   7                                  if(result == SUCCESS)
+ 533   7                                  {
+ 534   8                                      _nop_();
+ 535   8                                  }
+ 536   7                                  else
+ 537   7                                  {
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 10  
+
+ 538   8                                      _nop_();
+ 539   8                                  }
+ 540   7                              }                    
+ 541   6                          }
+ 542   5      #endif
+ 543   5                          else
+ 544   5                              ;
+ 545   5                      }
+ 546   4      #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_MOUSE_
+                              if(~P3_2)
+                              {
+                                  do{
+                                      MouseDemo();
+                                  }while(~P3_2);
+                              }
+              #endif
+              #ifdef _PROFILE_HOGP_KEYBOARD_
+                              if(~P0_7)
+                              {
+                                  if((att_HDL_HIDS_REPORT_KBI_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_DESCRIPTORS_
+             -CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+                                  {
+                                      if((HID_report_KB_key_temp < 0x04)||(HID_report_KB_key_temp >= 0x27))  //a~9
+                                      {
+                                          HID_report_KB_key_temp = 0x04;
+                                      }
+                                      else
+                                      {
+                                          HID_report_KB_key_temp++;
+                                      }
+                                      att_HDL_HIDS_REPORT_KBI[HDL_HIDS_REPORT_TAB_KEY_DATA0] = HID_report_KB_key_temp;
+                                      result = BLE_SendData(att_HDL_HIDS_REPORT_KBI,ATT_HDL_HIDS_REPORT_KBI_INIT,ATT_HDL
+             -_HIDS_REPORT_KBI_INIT[4]);
+                                      if(result == SUCCESS)
+                                      {
+                                          presskey07 = 1;
+                                      }
+                                  }
+                              }
+                              else
+                              {
+                                  if(presskey07)
+                                  {
+                                      if((att_HDL_HIDS_REPORT_KBI_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_DESCRIPT
+             -ORS_CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+                                      {
+                                          att_HDL_HIDS_REPORT_KBI[HDL_HIDS_REPORT_TAB_KEY_DATA0] = 0x00;
+                                          result = BLE_SendData(att_HDL_HIDS_REPORT_KBI,ATT_HDL_HIDS_REPORT_KBI_INIT,ATT
+             -_HDL_HIDS_REPORT_KBI_INIT[4]);
+                                          if(result == SUCCESS)
+                                          {
+                                              presskey07 = 0;
+                                          }
+                                      }
+                                  }
+                              }
+              #endif
+              #ifdef _PROFILE_HOGP_COMSUMER_
+                              if(~P0_6)
+                              {
+                                  if((att_HDL_HIDS_REPORT_CSI_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_DESCRIPTORS_
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 11  
+
+             -CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+                                  {
+                                      att_HDL_HIDS_REPORT_CSI[HDL_HIDS_REPORT_TAB_CSKEY_L] = HID_RPT_CS_KEY_DEMO[0][0];
+                                      att_HDL_HIDS_REPORT_CSI[HDL_HIDS_REPORT_TAB_CSKEY_H] = HID_RPT_CS_KEY_DEMO[0][1];
+                                      result = BLE_SendData(att_HDL_HIDS_REPORT_CSI,ATT_HDL_HIDS_REPORT_CSI_INIT,ATT_HDL
+             -_HIDS_REPORT_CSI_INIT[4]);
+                                      if(result == SUCCESS)
+                                      {
+                                          presskey06 = 1;
+                                      }
+                                  }
+                              }
+                              else
+                              {
+                                  if(presskey06)
+                                  {
+                                      if((att_HDL_HIDS_REPORT_CSI_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_DESCRIPT
+             -ORS_CLIENT_CHARACTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+                                      {
+                                          att_HDL_HIDS_REPORT_CSI[HDL_HIDS_REPORT_TAB_CSKEY_L] = 0x00;
+                                          att_HDL_HIDS_REPORT_CSI[HDL_HIDS_REPORT_TAB_CSKEY_H] = 0x00;
+                                          result = BLE_SendData(att_HDL_HIDS_REPORT_CSI,ATT_HDL_HIDS_REPORT_CSI_INIT,ATT
+             -_HDL_HIDS_REPORT_CSI_INIT[4]);
+                                          if(result == SUCCESS)
+                                          {
+                                              presskey06 = 0;
+                                          }
+                                      }
+                                  }
+                              }
+              #endif
+              #endif
+ 624   4      
+ 625   4      #ifdef _PROFILE_TAOBAO_
+                              if((att_HDL_TAOBAO_DATI_MEASUREMENT_CLIENT_CHARACTERISTIC_CONFIGURATION[0]&GATT_DESCRIPTOR
+             -S_CLIENT_CHARACTERISTIC_CONFIGURATION_INDICATION) != 0)
+                              {
+                                  if(auth_req == FAIL && waitpacket == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x00:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = auth_data_taobao[i];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                              
+                                          case 0x01:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = auth_data_taobao[i+20];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                              
+                                          case 0x02:
+                                              for(i=0;i<20;i++)
+                                                    att_HDL_TAOBAO_DATI[i] = auth_data_taobao[i+20+20];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 12  
+
+                                              {
+                                                  index++;
+                                                  //auth_req = PASS;
+                                              }
+                                              break;
+                                              
+                                          default:
+                                              break;
+                                      }
+                                  }
+                                  else if(auth_req == PASS && init_req == FAIL && waitpacket == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x03:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = init_data_taobao[i];
+                                          
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                          
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                          
+                                          default:
+                                              break;
+                                      }
+                                  }
+                                  else if(auth_init_finish == FAIL && waitpacket == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x04:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = send_test_data_taobao[i];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                      
+                                              case 0x05:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = send_test_data_taobao[i+20];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                              
+                                          case 0x06:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_TAOBAO_DATI[i] = send_test_data_taobao[i+20+20];
+                                              result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                              {
+                                                  //auth_init_finish = PASS;
+                                                   index++;
+                                              }
+                                              break;
+                                              
+                                          default:
+                                              break;
+                                      }
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 13  
+
+                                  }
+                                  else
+                                      ;
+                              }
+              #endif
+ 720   4      #ifdef _PROFILE_WECHAT_
+              #ifndef _PROFILE_WECHAT_SIMPLE_MODE_
+                              if((att_HDL_WECHAT_DATI_MEASUREMENT_CLIENT_CHARACTERISTIC_CONFIGURATION[0]&GATT_DESCRIPTOR
+             -S_CLIENT_CHARACTERISTIC_CONFIGURATION_INDICATION) != 0)
+                              {
+                                  if(auth_req == FAIL && waitpacket == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x00:
+                                              for(i=0;i<20;i++)
+                                                  att_HDL_WECHAT_DATI[i] = auth_data_wechat[i];
+                                              result = BLE_SendData(att_HDL_WECHAT_DATI,ATT_HDL_WECHAT_DATI_INIT,20);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                          break;
+                                          
+                                          case 0x01:
+                                              for(i=0;i<6;i++)
+                                                  att_HDL_WECHAT_DATI[i] = auth_data_wechat[i+20];
+                                              result = BLE_SendData(att_HDL_WECHAT_DATI,ATT_HDL_WECHAT_DATI_INIT,6);
+                                              if(result == SUCCESS)
+                                                  index++;
+                                              break;
+                                          
+                                          default:
+                                              break;
+                                      }
+                                  }
+                                  else if(auth_req == PASS && init_req == FAIL && waitpacket == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x02:
+                                              for(i=0;i<19;i++)
+                                                  att_HDL_WECHAT_DATI[i] = init_data_wechat[i];
+                                          
+                                              result = BLE_SendData(att_HDL_WECHAT_DATI,ATT_HDL_WECHAT_DATI_INIT,19);
+                                              if(result == SUCCESS)
+                                                   index++;
+                                          break;
+                                          
+                                          default:
+                                              break;
+                                      }
+                                  }
+                                  else if(auth_req == PASS && init_req == PASS && auth_init_finish == FAIL && waitpacket
+             - == 0)
+                                  {
+                                      switch(index)
+                                      {
+                                          case 0x03:
+                                              for(i=0;i<19;i++)
+                                                  att_HDL_WECHAT_DATI[i] = send_test_data_wechat[i];
+                                              result = BLE_SendData(att_HDL_WECHAT_DATI,ATT_HDL_WECHAT_DATI_INIT,19);
+                                              if(result == SUCCESS)
+                                                  index++;
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 14  
+
+                                              break;
+                                              
+                                          default:
+                                              break;
+                                      }
+                                  }
+                                  else
+                                      ;
+                              }
+              #else
+                              if((att_HDL_WECHAT_SIMPLEMODE_DATRI_CLIENT_CHARACTERISTIC_CONFIGURATION[0]&GATT_DESCRIPTOR
+             -S_CLIENT_CHARACTERISTIC_CONFIGURATION_INDICATION) != 0)
+                              {
+                                  switch(index)
+                                  {
+                                      case 0x00:
+                                          for(i=0;i<4;i++)
+                                              att_HDL_WECHAT_SIMPLEMODE_DATRI[i] = current_step_data[i];
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRI,ATT_HDL_WECHAT_SIMPLEMOD
+             -E_DATRI_INIT,4);
+                                          att_HDL_WECHAT_SIMPLEMODE_DATRI[20]=4;
+                                          if(result == SUCCESS)
+                                              index++;
+                                          break;
+                                      
+                                      case 0x01:
+                                          for(i=0;i<10;i++)
+                                              att_HDL_WECHAT_SIMPLEMODE_DATRI[i] = current_total_data[i];
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRI,ATT_HDL_WECHAT_SIMPLEMOD
+             -E_DATRI_INIT,10);
+                                          att_HDL_WECHAT_SIMPLEMODE_DATRI[20]=10;
+                                          if(result == SUCCESS)
+                                              index++;
+                                          break;
+                                      
+                                      default:
+                                          break;
+                                  }                
+                              }
+                              else if((att_HDL_WECHAT_SIMPLEMODE_DATRWI_CLIENT_CHARACTERISTIC_CONFIGURATION[0]&GATT_DESC
+             -RIPTORS_CLIENT_CHARACTERISTIC_CONFIGURATION_INDICATION) != 0)
+                              {
+                                  switch(att_HDL_WECHAT_SIMPLEMODE_DATRWI[0])
+                                  {
+                                      case 0x01:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,4);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                          break;
+                                      
+                                      case 0x02:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,4);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                              break;
+                                      
+                                      case 0x03:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,7);
+                                          if(result == SUCCESS)
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 15  
+
+                                              _nop_();
+                                          break;
+                                      
+                                      case 0x04:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,4);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                          break;
+                                      
+                                      case 0x05:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,7);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                          break;
+                                      
+                                      case 0x06:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,7);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                          break;
+                                      
+                                      case 0x07:
+                                          result = BLE_SendData(att_HDL_WECHAT_SIMPLEMODE_DATRWI,ATT_HDL_WECHAT_SIMPLEMO
+             -DE_DATRWI_INIT,10);
+                                          if(result == SUCCESS)
+                                              _nop_();
+                                          break;
+                                      
+                                      default:
+                                          break;
+                                  }
+                              }
+              #endif
+              #endif
+ 863   4                      if(auth_init_finish == PASS && waitpacket == 0)
+ 864   4                      {
+ 865   5      #ifdef _PROFILE_TAOBAO_
+                                  Prcss_Weight();
+              #endif
+ 868   5                      }
+ 869   4                  }
+ 870   3          ////////////////TWOR///////////////////////////////////
+ 871   3                  if(Timer500ms_flag)
+ 872   3                  {
+ 873   4                      Timer500ms_flag = 0;
+ 874   4                  }
+ 875   3      
+ 876   3                  BLE_AutoPwrDown_Enable();
+ 877   3                  
+ 878   3                  P1_6 ^=1;
+ 879   3                  P1_7 ^=1;
+ 880   3                  if ((P3_0==0) && (P3_1==0))
+ 881   3                      Uart_OTA_Flag = 1;
+ 882   3              }
+ 883   2              else
+ 884   2              {
+ 885   3                  if (Uart_OTA_Start==0)
+ 886   3                  {
+ 887   4                      EIE = EIE & 0xF7;//Disable RF_ISR interrupt
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 16  
+
+ 888   4                      while ((P3_0==0) && (P3_1==0))
+ 889   4                          _nop_();
+ 890   4                      Uart_OTA_Start = 1;
+ 891   4                      Uart_OTA_Init();
+ 892   4                      /*if(ble_state == STANDBY_STATE)
+ 893   4                      {
+ 894   4                          _nop_();
+ 895   4                      }
+ 896   4                      else if(ble_state == ADV_STATE)
+ 897   4                      {
+ 898   4                          ADV_InitStructure.ADV_Run = DISABLE;
+ 899   4                          BLE_ADV_Cmd(&ADV_InitStructure);
+ 900   4                          _nop_();
+ 901   4                      }
+ 902   4                      else if(ble_state == CONNECT_ESTABLISH_STATE)
+ 903   4                      {
+ 904   4                          _nop_();
+ 905   4                      }*/
+ 906   4                      P3OE  = P3OE & 0xFE;
+ 907   4                      P3PUN = P3PUN & 0xFE;
+ 908   4      
+ 909   4                      InitUART();
+ 910   4                  }
+ 911   3                  else
+ 912   3                  {
+ 913   4                      UartOTA_Process();
+ 914   4                  }
+ 915   3              }
+ 916   2          }
+ 917   1      }
+ 918          
+ 919          #ifdef _PROFILE_HOGP_
+              #ifdef _PROFILE_HOGP_MOUSE_
+              void MouseDemo(void)
+              {
+                  uint8_t result;
+              
+                  if(mousedata == 0)
+                  {
+                      if((att_HDL_HIDS_REPORT_MSI_CLIENT_CHARACTERISTIC_CONFIGURATION[0] & GATT_DESCRIPTORS_CLIENT_CHARA
+             -CTERISTIC_CONFIGURATION_NOTIFICATION) != 0)
+                      {
+                          HID_report_MS_key_temp++;
+                          if(HID_report_MS_key_temp <= 0x3F)
+                          {
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_L] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_H] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_L] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_H] = 0xFF;
+                          }
+                          else if(HID_report_MS_key_temp <= 0x7F)
+                          {
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_L] = 0x01;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_H] = 0x00;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_L] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_H] = 0xFF;
+                          }
+                          else if(HID_report_MS_key_temp <= 0xBF)
+                          {
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_L] = 0x01;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_H] = 0x00;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_L] = 0x01;
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 17  
+
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_H] = 0x00;
+                          }
+                          else if(HID_report_MS_key_temp <= 0xFF)
+                          {
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_L] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_L_R_H] = 0xFF;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_L] = 0x01;
+                              att_HDL_HIDS_REPORT_MSI[HDL_HIDS_REPORT_TAB_DIR_U_D_H] = 0x00;
+                          }
+              
+                          result = BLE_SendData(att_HDL_HIDS_REPORT_MSI,ATT_HDL_HIDS_REPORT_MSI_INIT,ATT_HDL_HIDS_REPORT
+             -_MSI_INIT[4]);
+                          if(result == SUCCESS)
+                          {
+                              mousedata = 0;
+                          }
+                          else
+                          {
+                              mousedata = 1;
+                          }
+                      }
+                  }
+                  else
+                  {
+                      result = BLE_SendData(att_HDL_HIDS_REPORT_MSI,ATT_HDL_HIDS_REPORT_MSI_INIT,ATT_HDL_HIDS_REPORT_MSI
+             -_INIT[4]);
+                      if(result == SUCCESS)
+                      {
+                          mousedata = 0;
+                      }
+                      else
+                      {
+                          mousedata = 1;
+                      }
+                  }
+              }
+              #endif
+              #endif
+ 985          
+ 986          #ifdef _PROFILE_TAOBAO_
+              void Prcss_Weight(void)
+              {
+                  uint8_t i,result,tmp;
+                  
+                  switch(scale_index)
+                  {
+                      case 0x00:
+                          for(i=0;i<20;i++)
+                              att_HDL_TAOBAO_DATI[i] = send_scale_data[i];
+                          
+                          att_HDL_TAOBAO_DATI[10]=scalebuf[0];
+                          scalebuf[0]++;
+                          
+                          result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                          if(result == SUCCESS)
+                              scale_index++;                      
+                          break;
+                          
+                      case 0x01:
+                          for(i=0;i<20;i++)
+                              att_HDL_TAOBAO_DATI[i] = send_scale_data[i+20];
+                          att_HDL_TAOBAO_DATI[1]=scalebuf[1];
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 18  
+
+                          att_HDL_TAOBAO_DATI[2]=scalebuf[2];
+                          att_HDL_TAOBAO_DATI[3]=scalebuf[3];
+                          att_HDL_TAOBAO_DATI[4]=scalebuf[4];
+                          att_HDL_TAOBAO_DATI[8]=scalebuf[5];
+                          att_HDL_TAOBAO_DATI[9]=scalebuf[6];
+                          att_HDL_TAOBAO_DATI[10]=scalebuf[7];
+                          att_HDL_TAOBAO_DATI[11]=scalebuf[8];
+                          att_HDL_TAOBAO_DATI[12]=scalebuf[9];
+                          
+                          result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                          if(result == SUCCESS)
+                          {
+                              weightvalue = weightvalue+100;
+                              
+                              tmp=toascii(weightvalue,3);
+                              scalebuf[1]=tmp;
+                              tmp=toascii(weightvalue,2);
+                              scalebuf[2]=tmp;            
+                              tmp=toascii(weightvalue,1); 
+                              scalebuf[3]=tmp;            
+                              tmp=toascii(weightvalue,0);
+                              scalebuf[4]=tmp;
+                              
+                              datevalue = datevalue+100;
+                              tmp=toascii(datevalue,4);
+                              scalebuf[5]=tmp;
+                              tmp=toascii(datevalue,3);
+                              scalebuf[6]=tmp;            
+                              tmp=toascii(datevalue,2);
+                              scalebuf[7]=tmp;            
+                              tmp=toascii(datevalue,1);
+                              scalebuf[8]=tmp;            
+                              tmp=toascii(datevalue,0);
+                              scalebuf[9]=tmp;  
+                                        
+                              scale_index++;
+                          }
+                          break;
+                          
+                      case 0x02:
+                          for(i=0;i<20;i++)
+                              att_HDL_TAOBAO_DATI[i] = send_scale_data[i+20+20];
+                          result = BLE_SendData(att_HDL_TAOBAO_DATI,ATT_HDL_TAOBAO_DATI_INIT,20);
+                          if(result == SUCCESS)
+                          {
+                              scale_index++;
+                              KeyWakeup = 0;
+                          }
+                          break;
+                      
+                      default:
+                          break;
+                  }                                 
+              
+              }
+              
+              /*********************************************************************
+              **  toascii
+              *********************************************************************/
+              uint8_t toascii(uint32_t in, uint8_t unit)
+              {
+                  uint8_t tmp;
+C51 COMPILER V9.00   MAIN_UART                                                             09/07/2017 13:20:03 PAGE 19  
+
+              
+                  tmp = ascii[(in>>(unit*4))&0x0F];
+                  return tmp;
+              }
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    568    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      8      24
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

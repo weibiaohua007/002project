@@ -1,0 +1,106 @@
+C51 COMPILER V9.53.0.0   APPLICATION_CHECK                                                 11/05/2018 10:15:37 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE APPLICATION_CHECK
+OBJECT MODULE PLACED IN .\application_check.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE ..\source\application_check.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTV
+                    -ECTOR(0X0300) INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\application_check.lst) TABS(2) OBJECT(
+                    -.\application_check.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "LibFunction.h"
+  12          
+  13          /*************************************************************************
+  14           *
+  15           * ChkBLE_ATT_Chr_AcssRd_ByUser
+  16           * Description:
+  17           * 
+  18           ************************************************************************/
+  19          uint8_t ChkBLE_ATT_Chr_AcssRd_ByUser(uint8_t *AddrAttHandle)
+  20          {
+  21   1          uint8_t Rsp_Error;
+  22   1          uint8_t *p;
+  23   1      
+  24   1          Rsp_Error = 0;
+  25   1      
+  26   1          //add for remove compiler warning 
+  27   1          p = AddrAttHandle;
+  28   1      
+  29   1      //    /******     Demo 01    ******/
+  30   1      //    //Check ATT_PERMISSION_HDL_UDF01S_UDATRW01_INIT & ATT_PERMISSION_HDL_DIS_SERIAL_NUMBER_STRING
+  31   1      //    p = &ATT_HDL_DIS_SERIAL_NUMBER_STRING[5];
+  32   1      //    if(AddrAttHandle == p)
+  33   1      //    {
+  34   1      //        Rsp_Error = ERR_CODE_ATT_APPLICATION_ERROR;
+  35   1      //    }
+  36   1      
+  37   1      //    p = att_HDL_UDF01S_UDATRW01;
+  38   1      //    if(AddrAttHandle == p)
+  39   1      //    {
+  40   1      //        //Rsp_Error = 0;
+  41   1      //    }
+  42   1      //    /************End 01**********/
+  43   1          
+  44   1          return Rsp_Error;
+  45   1      }
+  46          
+  47          /*************************************************************************
+  48           *
+  49           * ChkBLE_ATT_Chr_AcssWr_ByUser
+  50           * Description:
+  51           * 
+  52           ************************************************************************/
+  53          uint8_t ChkBLE_ATT_Chr_AcssWr_ByUser(uint8_t *AddrAttHandle, uint8_t *wrDataBuf)
+C51 COMPILER V9.53.0.0   APPLICATION_CHECK                                                 11/05/2018 10:15:37 PAGE 2   
+
+  54          {
+  55   1          uint8_t Rsp_Error;
+  56   1          uint8_t *p;
+  57   1      
+  58   1          Rsp_Error = 0;
+  59   1      
+  60   1          //add for remove compiler warning 
+  61   1          p = AddrAttHandle;
+  62   1          p = wrDataBuf;
+  63   1      //
+  64   1      //    /******     Demo 02    ******/
+  65   1      //    //Check ATT_PERMISSION_HDL_UDF01S_UDATRW01_INIT & ATT_PERMISSION_HDL_DIS_SERIAL_NUMBER_STRING
+  66   1      //    //p = &ATT_HDL_DIS_SERIAL_NUMBER_STRING[5];     //Read only, not need to handle
+  67   1      //
+  68   1      //    p = att_HDL_UDF01S_UDATRW01;
+  69   1      //    if(AddrAttHandle == p)
+  70   1      //    {
+  71   1      //        if(*(wrDataBuf+1) != 0x05)
+  72   1      //        {
+  73   1      //            Rsp_Error = ERR_CODE_ATT_APPLICATION_ERROR;
+  74   1      //        }
+  75   1      //    }
+  76   1      //    /************End 02**********/
+  77   1      
+  78   1          return Rsp_Error;
+  79   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     30    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      12
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

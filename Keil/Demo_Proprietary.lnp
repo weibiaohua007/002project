@@ -1,0 +1,21 @@
+".\startup.obj",
+".\FlashChk.obj",
+".\INTERRUPT_OFFSET.obj",
+".\OTA_IAP.obj",
+"..\Library\A8107_BLE_LIB.LIB",
+"..\OTA\OTA.LIB",
+"..\IAP\IAP.LIB",
+".\security.obj",
+".\servicegen.obj",
+"..\Proprietary\Proprietary.LIB",
+".\mcufunction.obj",
+".\application_check.obj",
+".\interrupt_24G.obj",
+".\main_24G.obj",
+".\IEEE.obj",
+".\OTA_Data.obj" 
+TO "Demo_Proprietary" 
+RAMSIZE(256) 
+NOOVERLAY 
+CODE( 0X0300-0XFFFF , ?PR?*OTA(0x400),?C?LIB_CODE,?PR?*IAP(0X2000),?PR?_ERASE_START?IAP(0x3000),?PR?_WRITEFLASH_START?IAP,?PR?*interrupt_24G,?PR?*host,?PR?*main_24G )
+XDATA( 0X0000-0X1FFF )

@@ -1,0 +1,21 @@
+".\startup.obj",
+".\FlashChk.obj",
+".\INTERRUPT_OFFSET.obj",
+".\OTA_IAP.obj",
+"..\Library\A8107_BLE_LIB.LIB",
+"..\OTA\OTA.LIB",
+"..\IAP\IAP.LIB",
+".\servicegen.obj",
+".\security.obj",
+".\application_check.obj",
+".\interrupt_UART.obj",
+".\main_UART.obj",
+".\mcufunction_UART.obj",
+".\IEEE.obj",
+".\OTA_Data.obj",
+"..\Uart_OTA\Uart_OTA.LIB" 
+TO "Demo_UART_OTA" 
+RAMSIZE(256) 
+NOOVERLAY 
+CODE( 0X0300-0XFFFF , ?PR?*OTA(0x400),?C?LIB_CODE,?PR?*IAP(0X2500),?PR?_ERASE_START?IAP(0x3000),?PR?_WRITEFLASH_START?IAP,?PR?*INTERRUPT_UART,?PR?*host,?PR?*MAIN_UART )
+XDATA( 0X0000-0X1FFF )

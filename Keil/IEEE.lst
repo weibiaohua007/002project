@@ -1,0 +1,56 @@
+A51 MACRO ASSEMBLER  IEEE                                                                 11/05/2018 10:15:37 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02b
+OBJECT MODULE PLACED IN .\IEEE.obj
+ASSEMBLER INVOKED BY: D:\Keil_v5\C51\BIN\A51.EXE ..\UserData\IEEE.a51 SET(LARGE) DEBUG PRINT(.\IEEE.lst) OBJECT(.\IEEE.o
+                      bj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     ;/*****************************************************************************
+                       2     ;**               AMICCOM Electronics Corporation Document                   **
+                       3     ;**          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+                       4     ;**                                                                          **
+                       5     ;**      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+                       6     ;**                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+                       7     ;**                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+                       8     ;**         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+                       9     ;*****************************************************************************/
+                      10     NAME    IEEEE_ADDRESS
+                      11     
+----                  12     CSEG AT 0x02F8
+                      13     
+02F8 FFFF             14     DB  0xFF, 0xFF
+                      15     
+                      16     ;================================================ User Modify =============================
+                             ====================
+                      17     
+                      18         ; IEEE Address
+                      19             ; for ICE 
+02FA 187A9385         20                 DB  0x18, 0x7A, 0x93, 0x85, 0x08, 0x01  ;Test
+02FE 0801                    
+                      21                 ;DB  0xD0, 0x39, 0x72, 0xA5, 0xEF, 0x24     ;WeChat
+                      22                 ;DB  0x18, 0x7A, 0x93, 0x15, 0x08, 0x2D     ;TaoBao
+                      23             ; for Writer
+                      24                 ;DB  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+                      25     
+                      26     ;================================================= Modify END =============================
+                             ====================
+                      27     
+                      28     END
+A51 MACRO ASSEMBLER  IEEE                                                                 11/05/2018 10:15:37 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+IEEEE_ADDRESS. . .  N NUMB   -----       
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

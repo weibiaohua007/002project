@@ -1,0 +1,1 @@
+"..\source\interrupt_UART.c" LARGE OPTIMIZE (9,SIZE) BROWSE NOAREGS INTVECTOR(0x0300) INCDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\interrupt_UART.lst) TABS (2) OBJECT(.\interrupt_UART.obj)

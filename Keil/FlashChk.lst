@@ -1,0 +1,42 @@
+A51 MACRO ASSEMBLER  FLASHCHK                                                             11/05/2018 10:15:36 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02b
+OBJECT MODULE PLACED IN .\FlashChk.obj
+ASSEMBLER INVOKED BY: D:\Keil_v5\C51\BIN\A51.EXE ..\OTA\FlashChk.a51 SET(LARGE) DEBUG PRINT(.\FlashChk.lst) OBJECT(.\Fla
+                      shChk.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     ;/*****************************************************************************
+                       2     ;**               AMICCOM Electronics Corporation Document                   **
+                       3     ;**          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+                       4     ;**                                                                          **
+                       5     ;**      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+                       6     ;**                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+                       7     ;**                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+                       8     ;**         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+                       9     ;*****************************************************************************/
+                      10     
+                      11     NAME    FLASH_CHECK
+                      12     
+----                  13     CSEG AT 0xFFFE
+                      14     
+FFFE 5AA5             15     DB 0x5A, 0xA5
+                      16     
+                      17     END
+A51 MACRO ASSEMBLER  FLASHCHK                                                             11/05/2018 10:15:36 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+FLASH_CHECK. . . .  N NUMB   -----       
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

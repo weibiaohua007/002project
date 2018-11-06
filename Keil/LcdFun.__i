@@ -1,0 +1,1 @@
+"..\Lcd\LcdFun.c" LARGE OPTIMIZE (9,SIZE) BROWSE NOAREGS INTVECTOR(0x0300) INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\LcdFun.lst) TABS (2) OBJECT(.\LcdFun.obj)

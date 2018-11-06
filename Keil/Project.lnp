@@ -1,0 +1,20 @@
+".\startup.obj",
+".\FlashChk.obj",
+".\INTERRUPT_OFFSET.obj",
+".\OTA_IAP.obj",
+"..\Library\A8107_BLE_LIB.LIB",
+"..\IAP\IAP.LIB",
+"..\OTA\OTA.LIB",
+".\security.obj",
+".\servicegen.obj",
+".\mcufunction.obj",
+".\application_check.obj",
+".\interrupt.obj",
+".\main.obj",
+".\IEEE.obj",
+".\OTA_Data.obj" 
+TO "Project" 
+RAMSIZE(256) 
+NOOVERLAY 
+CODE( 0X0300-0XFFFF , ?PR?*OTA(0x400),?C?LIB_CODE,?PR?*IAP(0X2000),?PR?_ERASE_START?IAP(0x3000),?PR?_WRITEFLASH_START?IAP,?PR?*interrupt,?PR?*host,?PR?*main )
+XDATA( 0X0000-0X1FFF )

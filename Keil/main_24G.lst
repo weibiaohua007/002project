@@ -1,0 +1,419 @@
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN_24G
+OBJECT MODULE PLACED IN .\main_24G.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\source\main_24G.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(0X0300
+                    -) INCDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\main_24G.lst) TABS(2) OBJECT(.\main_24G.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2015 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "A8107.h"
+  12          #include "LibFunction.h"
+  13          #include "mcufunction.h"
+  14          #include "IAP.h"
+  15          #include "servicegen.h"
+  16          #include "OTA.h"
+  17          #include "Proprietary.h"
+  18          
+  19          uint8_t     xdata   Auto24G_Mode;
+  20          uint8_t     xdata   Timer1Flag;
+  21          uint16_t    xdata   Timer1Cnt;
+  22          
+  23          
+  24          void WriteTxFIFO(uint8_t* pu8Data, uint8_t u8Len)
+  25          {
+  26   1          uint8_t i;
+  27   1      
+  28   1          for (i = 0; i < u8Len; i++)
+  29   1          {
+  30   2              XBYTE[TXFIFO_REG + i] = *(pu8Data + i);
+  31   2          }
+  32   1      }
+  33          
+  34          void ReadRxFIFO(uint8_t* pu8Data, uint8_t u8Len)
+  35          {
+  36   1          uint8_t i;
+  37   1      
+  38   1          for (i = 0; i < u8Len; i++)
+  39   1              *(pu8Data + i) = XBYTE[RXFIFO_REG + i];
+  40   1      }
+  41          
+  42          /*****************************************************************************
+  43          **  ROUTINE NAME: Disable Timer0                                            **
+  44          **  FUNCTION    : Disable Timer0                                            **
+  45          *****************************************************************************/
+  46          void DisableTimer1(void)
+  47          {
+  48   1          Timer1Flag = DISABLE;
+  49   1          TR1        = DISABLE;
+  50   1          ET1        = DISABLE;
+  51   1      }
+  52          
+  53          /*****************************************************************************
+  54          **  ROUTINE NAME: Enable Timer0                                             **
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 2   
+
+  55          **  FUNCTION    : Enable Timer0                                             **
+  56          *****************************************************************************/
+  57          void EnableTimer1(void)
+  58          {
+  59   1      //    P0_3 ^=1;
+  60   1          Timer1Flag = ENABLE;
+  61   1          TR1        = ENABLE;
+  62   1          ET1        = ENABLE;
+  63   1      }
+  64          
+  65          /*****************************************************************************
+  66          **  FUNCTION    : Start 2.5ms timer0                                        **
+  67          *****************************************************************************/
+  68          void Set_Timer1_N_ms(uint8_t value)
+  69          {
+  70   1          uint32_t t;
+  71   1      
+  72   1          t=(uint32_t)value*2000;
+  73   1          
+  74   1          TL1 = t^0xFF;
+  75   1          TH1 = (t>>8)^0xFF;
+  76   1          Timer1Cnt=t>>16;
+  77   1          EnableTimer1();
+  78   1      }
+  79          
+  80          const uint8_t code Prop_ID_Tab[0x04] = {0x54, 0x75, 0xC5, 0x2A};
+  81          
+  82          const uint8_t code Prop_Tx_Tab[20] = {0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA,
+  83                                     0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA  };
+  84          
+  85          /*******************************************************************
+  86           *
+  87           * main - main function
+  88           * Description:
+  89           *      The function is the system entry point. The whole system is
+  90           *      start from here.
+  91           *
+  92           ******************************************************************/
+  93          void main(void)
+  94          {
+  95   1          ADV_InitDef ADV_InitStructure;
+  96   1      
+  97   1          uint8_t xdata   Temp;
+  98   1          uint8_t xdata   UpdateOTASpeed;
+  99   1          uint8_t xdata   DataLen;
+ 100   1          uint8_t xdata   AdvFastSpeed = ENABLE;
+ 101   1          uint8_t xdata   *ptrChar = NULL;
+ 102   1      
+ 103   1          uint16_t xdata   Time_value;
+ 104   1      
+ 105   1           void* pvHandle = NULL;
+ 106   1          uint8_t Prop_ID[0x04] = {0x54, 0x75, 0xC5, 0x2A};
+ 107   1          uint8_t Prop_Tx[20] = {0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA,
+ 108   1                                 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA  };
+ 109   1          uint8_t Prop_Rx[20];
+ 110   1          
+ 111   1          TS_PR_Param    PropParm;    
+ 112   1      
+ 113   1      //    while(~P0_4);
+ 114   1      
+ 115   1          InterruptDisable();
+ 116   1          InitMCU();
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 3   
+
+ 117   1          
+ 118   1          for (Temp=0;Temp<4;Temp++)
+ 119   1              Prop_ID[Temp] = Prop_ID_Tab[Temp];
+ 120   1              
+ 121   1          for (Temp=0;Temp<20;Temp++)
+ 122   1              Prop_Tx[Temp] = Prop_Tx_Tab[Temp];
+ 123   1      
+ 124   1          internalRC = 0; //0 :Using External RC 32.768KHz ; 1:Using internal RC 32.000KHz
+ 125   1          
+ 126   1          Auto24G_Mode = 0; //0:Using Customer Tx Rx 1:Using library Tx Rx
+ 127   1          
+ 128   1          InitCrystalCL(0x32);  //AMICCOM CrystalCL 0x32(MD8107-A05)(18pF)/ 0x14(MD8107-A06)(12pF)/ 0x0D(9pF)
+ 129   1          
+ 130   1          InitRF();    
+ 131   1          IAP_Initialize();
+ 132   1          OTA_Initialize();
+ 133   1          
+ 134   1          InitBLE();
+ 135   1          BLE_SetTxPower(6); //level 0 ~ 7 : 0 => -17dBm; 1 => -15dBm; 2 => -10dBm; 3 => -5dBm; 4 => 0dBm; 5 => 
+             -2dBm; 6 => 4dBm; 7 => 7dBm
+ 136   1          InterruptEnable();
+ 137   1          
+ 138   1          Prop_Initialize();
+ 139   1          PropParm.Prop_ID = &Prop_ID;
+ 140   1          PropParm.Prop_DR.Prop_DRI = DR1MB_DV250K; 
+ 141   1          PropParm.Prop_DR.Prop_SDR = 1;
+ 142   1          PropParm.Prop_DR.Prop_Ext = 0x00;
+ 143   1          PropParm.Prop_TxWait = 1500;
+ 144   1          PropParm.Prop_RxWS = 5;
+ 145   1          Prop_Create(&PropParm, &pvHandle);    
+ 146   1          memset(Prop_Rx, 0x00, 0x0A);
+ 147   1      
+ 148   1          while(1)
+ 149   1          {
+ 150   2              OTA_Process();
+ 151   2              
+ 152   2              /* User Can Add Code */
+ 153   2              
+ 154   2              if(ble_state == STANDBY_STATE)
+ 155   2              {
+ 156   3                  if (Auto24G_Mode)
+ 157   3                  {
+ 158   4                      Prop_Start(pvHandle, 50);
+ 159   4                      Prop_RunRx(pvHandle, Prop_Rx, 10);
+ 160   4                      Prop_RunTx(pvHandle, Prop_Tx, 10);
+ 161   4                      Prop_Stop(pvHandle);
+ 162   4                  }
+ 163   3                  else
+ 164   3                  {
+ 165   4                      Prop_Start(pvHandle, 50);
+ 166   4      
+ 167   4                      XBYTE[STROBE_REG] = CMD_PLL;
+ 168   4                      Time_value = Get_Interval_Time_Left(); //Time_value*0.000152587890625
+ 169   4                      //if (Time_value>100)//>15ms
+ 170   4                      {
+ 171   5                          WriteTxFIFO(Prop_Tx, 20);
+ 172   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 173   5                          XBYTE[STROBE_REG] = CMD_TX;
+ 174   5                          while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wait WT
+             -R go High
+ 175   5      
+ 176   5                          Set_Timer1_N_ms(5);
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 4   
+
+ 177   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 178   5                          XBYTE[STROBE_REG] = CMD_RX;
+ 179   5                          while((XBYTE[STROBE_REG]&0x80)==0x00)
+ 180   5                              _nop_();
+ 181   5                          
+ 182   5                          while ((Timer1Flag) && (XBYTE[STROBE_REG]&0x80))
+ 183   5                              _nop_();
+ 184   5                          if (XBYTE[STROBE_REG]&0x80)
+ 185   5                              XBYTE[STROBE_REG] = CMD_PLL;
+ 186   5                          else
+ 187   5                          { 
+ 188   6                              ReadRxFIFO(Prop_Rx ,20);
+ 189   6                          }    
+ 190   5                          Set_Timer1_N_ms(5);
+ 191   5                          WriteTxFIFO(Prop_Tx, 20);
+ 192   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 193   5                          while (Timer1Flag)
+ 194   5                          {
+ 195   6                              XBYTE[STROBE_REG] = CMD_TX;
+ 196   6                              while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wai
+             -t WTR go High
+ 197   6                              for (Temp=0;Temp<200;Temp++)
+ 198   6                              {
+ 199   7                                  _nop_();
+ 200   7                                  _nop_();
+ 201   7                                  _nop_();
+ 202   7                                  _nop_();
+ 203   7                                  _nop_();
+ 204   7                              }
+ 205   6                          }
+ 206   5                      }
+ 207   4      
+ 208   4                      Prop_Stop(pvHandle);
+ 209   4                  }
+ 210   3      
+ 211   3                  ADV_InitStructure.ADV_Timing = 0; // ADV Interval = (20ms + 0.625ms*ADV_Timing) = 20ms
+ 212   3                  ADV_InitStructure.ADV_TO = 1500;  // ADV Timeout = ADV Interval * ADV_TO = 20ms*1500 = 30 sec
+ 213   3                  ADV_InitStructure.ADV_Channel = (TE_ADVCHANNEL)(ADV_CH37);// | ADV_CH38 | ADV_CH39);
+ 214   3                  ADV_InitStructure.ADV_Type = ADV_IND;
+ 215   3                  ADV_InitStructure.ADV_RndEnable = DISABLE;
+ 216   3                  ADV_InitStructure.ADV_TOEnable = ENABLE;
+ 217   3                  ADV_InitStructure.ADV_Run = ENABLE;    
+ 218   3                  BLE_ADV_Cmd(&ADV_InitStructure);
+ 219   3              }
+ 220   2              else if(ble_state == ADV_STATE)
+ 221   2              {
+ 222   3      
+ 223   3                  if (Auto24G_Mode)
+ 224   3                  {
+ 225   4                      Prop_Start(pvHandle, 50);
+ 226   4                      Prop_RunRx(pvHandle, Prop_Rx, 10);
+ 227   4                      Prop_RunTx(pvHandle, Prop_Tx, 10);
+ 228   4                      Prop_Stop(pvHandle);
+ 229   4                  }
+ 230   3                  else
+ 231   3                  {
+ 232   4                      Prop_Start(pvHandle, 50);
+ 233   4      
+ 234   4                      XBYTE[STROBE_REG] = CMD_PLL;
+ 235   4                      Time_value = Get_Interval_Time_Left(); //Time_value*0.000152587890625
+ 236   4                      if (Time_value>100)//>15ms
+ 237   4                      {
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 5   
+
+ 238   5                          WriteTxFIFO(Prop_Tx, 20);
+ 239   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 240   5                          XBYTE[STROBE_REG] = CMD_TX;
+ 241   5                          while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wait WT
+             -R go High
+ 242   5      
+ 243   5                          Set_Timer1_N_ms(5);
+ 244   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 245   5                          XBYTE[STROBE_REG] = CMD_RX;
+ 246   5                          P0_0 ^=1;
+ 247   5                          while((XBYTE[STROBE_REG]&0x80)==0x00)
+ 248   5                              _nop_();
+ 249   5                          
+ 250   5                          while ((Timer1Flag) && (XBYTE[STROBE_REG]&0x80))
+ 251   5                              _nop_();
+ 252   5                          P0_0 ^=1;
+ 253   5                          if (XBYTE[STROBE_REG]&0x80)
+ 254   5                              XBYTE[STROBE_REG] = CMD_PLL;
+ 255   5                          else
+ 256   5                          { 
+ 257   6                              ReadRxFIFO(Prop_Rx ,20);
+ 258   6                          }    
+ 259   5                              
+ 260   5                          Set_Timer1_N_ms(5);
+ 261   5                          WriteTxFIFO(Prop_Tx, 20);
+ 262   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 263   5                          while (Timer1Flag)
+ 264   5                          {
+ 265   6                              XBYTE[STROBE_REG] = CMD_TX;
+ 266   6                              while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wai
+             -t WTR go High
+ 267   6                              for (Temp=0;Temp<200;Temp++)
+ 268   6                              {
+ 269   7                                  _nop_();
+ 270   7                                  _nop_();
+ 271   7                                  _nop_();
+ 272   7                                  _nop_();
+ 273   7                                  _nop_();
+ 274   7                              }
+ 275   6                          }
+ 276   5                      }
+ 277   4      
+ 278   4                      Prop_Stop(pvHandle);
+ 279   4                  }
+ 280   3      
+ 281   3      
+ 282   3                  UpdateOTASpeed = ENABLE;
+ 283   3              }
+ 284   2              else if(ble_state == CONNECT_ESTABLISH_STATE)
+ 285   2              {
+ 286   3      
+ 287   3                  if (Auto24G_Mode)
+ 288   3                  {
+ 289   4                      Prop_Start(pvHandle, 50);
+ 290   4                      Prop_RunRx(pvHandle, Prop_Rx, 10);
+ 291   4                      Prop_RunTx(pvHandle, Prop_Tx, 10);
+ 292   4                      Prop_Stop(pvHandle);
+ 293   4                  }
+ 294   3                  else
+ 295   3                  {
+ 296   4                      Prop_Start(pvHandle, 50);
+ 297   4      
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 6   
+
+ 298   4                      XBYTE[STROBE_REG] = CMD_PLL;
+ 299   4                      Time_value = Get_Interval_Time_Left(); //Time_value*0.000152587890625
+ 300   4                      if (Time_value>100)//>15ms
+ 301   4                      {
+ 302   5                          WriteTxFIFO(Prop_Tx, 20);
+ 303   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 304   5                          XBYTE[STROBE_REG] = CMD_TX;
+ 305   5                          while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wait WT
+             -R go High
+ 306   5      
+ 307   5                          Set_Timer1_N_ms(5);
+ 308   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 309   5                          XBYTE[STROBE_REG] = CMD_RX;
+ 310   5                          while((XBYTE[STROBE_REG]&0x80)==0x00)
+ 311   5                              _nop_();
+ 312   5                          
+ 313   5                          while ((Timer1Flag) && (XBYTE[STROBE_REG]&0x80))
+ 314   5                              _nop_();
+ 315   5                          if (XBYTE[STROBE_REG]&0x80)
+ 316   5                              XBYTE[STROBE_REG] = CMD_PLL;
+ 317   5                          else
+ 318   5                          { 
+ 319   6                              ReadRxFIFO(Prop_Rx ,20);
+ 320   6                          }    
+ 321   5                              
+ 322   5                          Set_Timer1_N_ms(5);
+ 323   5                          WriteTxFIFO(Prop_Tx, 20);
+ 324   5                          XBYTE[FIFO1_REG] = (20 - 1);
+ 325   5                          while (Timer1Flag)
+ 326   5                          {
+ 327   6                              XBYTE[STROBE_REG] = CMD_TX;
+ 328   6                              while(((XBYTE[STROBE_REG]&0x80) == 0x80) || ((XBYTE[RST_REG]&0x03)==0x03));  //wai
+             -t WTR go High
+ 329   6                              for (Temp=0;Temp<200;Temp++)
+ 330   6                              {
+ 331   7                                  _nop_();
+ 332   7                                  _nop_();
+ 333   7                                  _nop_();
+ 334   7                                  _nop_();
+ 335   7                                  _nop_();
+ 336   7                              }
+ 337   6                          }
+ 338   5                      }
+ 339   4      
+ 340   4                      Prop_Stop(pvHandle);
+ 341   4                  }
+ 342   3      
+ 343   3                  if (UpdateOTASpeed)
+ 344   3                  {
+ 345   4                      Temp = (uint8_t)OTA_UpdataSpeed();
+ 346   4                     
+ 347   4                      if ((OTA_SUCCESSFUL == Temp) || (OTA_COUNT_MAX == Temp))
+ 348   4                          UpdateOTASpeed = DISABLE;
+ 349   4                  } /* Changing OTA download speeds */
+ 350   3      
+ 351   3                  if (BLE_writeEventFlag)
+ 352   3                  {
+ 353   4                      ptrChar = BLE_GetWriteEvent();
+ 354   4                      DataLen = BLE_GetWriteEvent_Length();
+ 355   4                      
+ 356   4                      if (ptrChar == &att_HDL_OTA_OTA_DATA)
+ 357   4                      {
+C51 COMPILER V9.00   MAIN_24G                                                              09/07/2017 13:21:09 PAGE 7   
+
+ 358   5                          OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_DATA, DataLen);
+ 359   5                          OTA_Process();
+ 360   5                      } /* Characteristic Data below the OTA Service */
+ 361   4                      else if (ptrChar == &att_HDL_OTA_OTA_CMD_CONTROL_POINT)
+ 362   4                      {
+ 363   5                          OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_CMD_CONTROL_POINT, DataLen);
+ 364   5                          OTA_Process();
+ 365   5                      } /* Characteristic Command below the OTA Service */
+ 366   4                      else
+ 367   4                      {
+ 368   5                      
+ 369   5                      }             
+ 370   4                  }
+ 371   3      
+ 372   3              }
+ 373   2              
+ 374   2              BLE_AutoPwrDown_Enable();
+ 375   2          }
+ 376   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1324    ----
+   CONSTANT SIZE    =     48    ----
+   XDATA SIZE       =      4      82
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

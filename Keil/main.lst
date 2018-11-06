@@ -1,0 +1,138 @@
+C51 COMPILER V9.00   MAIN                                                                  09/07/2017 13:20:24 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\source\main.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(0X0300) IN
+                    -CDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\main.lst) TABS(2) OBJECT(.\main.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2015 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "A8107.h"
+  12          #include "LibFunction.h"
+  13          #include "mcufunction.h"
+  14          #include "IAP.h"
+  15          #include "servicegen.h"
+  16          #include "OTA.h"
+  17          
+  18          /*******************************************************************
+  19           *
+  20           * main - main function
+  21           * Description:
+  22           *      The function is the system entry point. The whole system is
+  23           *      start from here.
+  24           *
+  25           ******************************************************************/
+  26          void main(void)
+  27          {
+  28   1          ADV_InitDef ADV_InitStructure;
+  29   1      
+  30   1          uint8_t xdata   DataLen;
+  31   1          uint8_t xdata   *ptrChar = NULL;
+  32   1          uint8_t xdata   UpdateOTASpeed;
+  33   1          uint8_t xdata   Temp;
+  34   1      
+  35   1          while(~P0_4);
+  36   1      
+  37   1          InterruptDisable();
+  38   1          InitMCU();
+  39   1          internalRC = 0; //0 :Using External RC 32.768KHz ; 1:Using internal RC 32.000KHz
+  40   1          
+  41   1          InitCrystalCL(0x32);  //AMICCOM CrystalCL 0x32(MD8107-A05)(18pF) / 0x14(MD8107-A06)(12pF) / 0x0D(9pF)
+  42   1          
+  43   1          InitRF();    
+  44   1          IAP_Initialize();
+  45   1          OTA_Initialize();
+  46   1          
+  47   1          InitBLE();
+  48   1          BLE_SetTxPower(6); //level 0 ~ 7 : 0 => -17dBm; 1 => -15dBm; 2 => -10dBm; 3 => -5dBm; 4 => 0dBm; 5 => 
+             -2dBm; 6 => 4dBm; 7 => 7dBm
+  49   1          InterruptEnable();
+  50   1          
+  51   1          RF_Timer500ms(ENABLE);
+  52   1          
+  53   1          while(1)
+C51 COMPILER V9.00   MAIN                                                                  09/07/2017 13:20:24 PAGE 2   
+
+  54   1          {
+  55   2              OTA_Process();
+  56   2              
+  57   2              /* User Can Add Code */
+  58   2              
+  59   2              if(ble_state == STANDBY_STATE)
+  60   2              {
+  61   3                  ADV_InitStructure.ADV_Timing = 128; // ADV Interval = (20ms + 0.625ms*ADV_Timing) = 100 ms
+  62   3                  ADV_InitStructure.ADV_TO = 1500;  // ADV Timeout = ADV Interval * ADV_TO = 100ms*1500 = 150 se
+             -c
+  63   3                  ADV_InitStructure.ADV_Channel = (TE_ADVCHANNEL)(ADV_CH37 | ADV_CH38 | ADV_CH39);
+  64   3                  ADV_InitStructure.ADV_Type = ADV_IND;
+  65   3                  ADV_InitStructure.ADV_RndEnable = DISABLE;
+  66   3                  ADV_InitStructure.ADV_TOEnable = DISABLE;
+  67   3                  ADV_InitStructure.ADV_Run = ENABLE;    
+  68   3                  BLE_ADV_Cmd(&ADV_InitStructure);
+  69   3              }
+  70   2              else if(ble_state == ADV_STATE)
+  71   2              {
+  72   3                  UpdateOTASpeed = ENABLE;
+  73   3              }
+  74   2              else if(ble_state == CONNECT_ESTABLISH_STATE)
+  75   2              {
+  76   3                  if (UpdateOTASpeed)
+  77   3                  {
+  78   4                      Temp = (uint8_t)OTA_UpdataSpeed();
+  79   4                     
+  80   4                      if ((OTA_SUCCESSFUL == Temp) || (OTA_COUNT_MAX == Temp))
+  81   4                          UpdateOTASpeed = DISABLE;
+  82   4                  } /* Changing OTA download speeds */
+  83   3                                        
+  84   3                  if (BLE_writeEventFlag)
+  85   3                  {
+  86   4                      ptrChar = BLE_GetWriteEvent();
+  87   4                      DataLen = BLE_GetWriteEvent_Length();
+  88   4                      
+  89   4                      if (ptrChar == &att_HDL_OTA_OTA_DATA)
+  90   4                      {
+  91   5                          OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_DATA, DataLen);
+  92   5                          OTA_Process();
+  93   5                      } /* Characteristic Data below the OTA Service */
+  94   4                      else if (ptrChar == &att_HDL_OTA_OTA_CMD_CONTROL_POINT)
+  95   4                      {
+  96   5                          OTA_SetReceiveData((uint16_t)att_HDL_OTA_OTA_CMD_CONTROL_POINT, DataLen);
+  97   5                          OTA_Process();
+  98   5                      } /* Characteristic Command below the OTA Service */
+  99   4                      else
+ 100   4                      {
+ 101   5                      
+ 102   5                      }
+ 103   4                  }
+ 104   3              }
+ 105   2      
+ 106   2              BLE_AutoPwrDown_Enable();
+ 107   2          }
+ 108   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    225    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      13
+C51 COMPILER V9.00   MAIN                                                                  09/07/2017 13:20:24 PAGE 3   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

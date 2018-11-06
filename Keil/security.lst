@@ -1,0 +1,65 @@
+C51 COMPILER V9.53.0.0   SECURITY                                                          11/05/2018 10:15:36 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE SECURITY
+OBJECT MODULE PLACED IN .\security.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE ..\Security Setting\security.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INT
+                    -VECTOR(0X0300) INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\security.lst) TABS(2) OBJECT(.\securi
+                    -ty.obj)
+
+line level    source
+
+   1          /*****************************************************************************
+   2          **               AMICCOM Electronics Corporation Document                   **
+   3          **          Copyright (c) 2011-2014 AMICCOM Electronics Corporation         **
+   4          **                                                                          **
+   5          **      A3,1F,No.1, Li-Hsin 1th Road, Science_Based Industrid Park,         **
+   6          **                       Hsin_Chu City, 300, Taiwan, ROC.                   **
+   7          **                 Tel: 886-3-5785818   Fax: 886-3-5785819                  **
+   8          **         E-mail:info@amiccom.com.tw  http: //www.amiccom.com.tw           **
+   9          *****************************************************************************/
+  10          #include "define.h"
+  11          #include "security.h"
+  12          
+  13          const uint8_t code RSP_PAIRING_REQUEST[] = {
+  14              0x07, 0x00,                                          //PDU Length
+  15              0x06, 0x00,                                          //Attribute Protocol
+  16              0x02,                                                //Code
+  17              IO_CAPABILITY_NOINPUT_NOOUTPUT,                      //IO Capabilities, User define
+  18              //IO_CAPABILITY_DISPLAY_ONLY,                          //IO Capabilities, User define
+  19              //IO_CAPABILITY_KEYBOARD_ONLY,                         //IO Capabilities, User define
+  20              0x00,                                                //OOB data flag: OOB Authentication data not pres
+             -ent
+  21              (                                                    //AuthReq
+  22                  AUTHREQ_BONDING_FLAGS_BONDING |
+  23                  MITM_PROTECTION_NO|
+  24                  0x00
+  25              ),
+  26              0x10,                                                //Maximum Encryption Key Size: 16 Octets
+  27              (                                                    //Initiator Key Distribution
+  28                  KEY_DISTRIBUTION_ENCKEY_1 |
+  29                  //KEY_DISTRIBUTION_IDKEY_1 |
+  30                  //KEY_DISTRIBUTION_SIGN_1 |
+  31                  0x00
+  32              ),
+  33              (                                                    //Responder Key Distribution
+  34                  KEY_DISTRIBUTION_ENCKEY_1 |
+  35                  //KEY_DISTRIBUTION_IDKEY_1 |
+  36                  //KEY_DISTRIBUTION_SIGN_1 |
+  37                  0x00
+  38              )
+  39          };
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =     11    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

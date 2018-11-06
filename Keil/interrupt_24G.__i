@@ -1,0 +1,1 @@
+"..\source\interrupt_24G.c" LARGE OPTIMIZE (9,SIZE) BROWSE NOAREGS INTVECTOR(0x0300) INCDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\interrupt_24G.lst) TABS (2) OBJECT(.\interrupt_24G.obj)

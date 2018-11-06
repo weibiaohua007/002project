@@ -1,0 +1,1 @@
+"..\source\mcufunction_UART.c" LARGE OPTIMIZE (9,SIZE) BROWSE NOAREGS INTVECTOR(0x0300) INCDIR(..\include;..\BLE Service) DEBUG OBJECTEXTEND PRINT(.\mcufunction_UART.lst) TABS (2) OBJECT(.\mcufunction_UART.obj)

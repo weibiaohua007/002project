@@ -1,0 +1,502 @@
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE RCADC
+OBJECT MODULE PLACED IN .\RcADC.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\source\RcADC.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(0X0300) I
+                    -NCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\RcADC.lst) TABS(2) OBJECT(.\RcADC.obj)
+
+line level    source
+
+   1          #include <stdlib.h>
+   2          #include "..\include\define.h"
+   3          #include "..\include\RcADC.h"
+   4          #include "..\include\a8107.h"
+   5          //#include "..\include\ExternVar.h"
+   6          //#include "..\include\function.h"
+   7          #include <math.h>
+   8          
+   9          const sint32_t code TempTable2[4][2]=
+  10          {
+  11              //'C
+  12              {-35 , 116181},
+  13              {-30 , 88978 },
+  14              {-25 , 68691 },
+  15              {-20 , 53643 }
+  16          };
+  17          const sint32_t code TempTable1[111][2]=
+  18          {
+  19              //'C
+  20              {-35 , 113594},
+  21              {-34 , 107709},
+  22              {-33 , 102176},
+  23              {-32 ,  96971},
+  24              {-31 ,  92071},
+  25              {-30 ,  87459},
+  26              {-29 ,  83075},
+  27              {-28 ,  78945},
+  28              {-27 ,  75050},
+  29              {-26 ,  71376},
+  30              {-25 ,  67910},
+  31              {-24 ,  64604},
+  32              {-23 ,  61482},
+  33              {-22 ,  58533},
+  34              {-21 ,  55745},
+  35              {-20 ,  53110},
+  36              {-19 ,  50624},
+  37              {-18 ,  48271},
+  38              {-17 ,  46044},
+  39              {-16 ,  43935},
+  40              {-15 ,  41938},
+  41              {-14 ,  40035},
+  42              {-13 ,  38232},
+  43              {-12 ,  36522},
+  44              {-11 ,  34900},
+  45              {-10 ,  33361},
+  46              {-9  ,  31894},
+  47              {-8  ,  30501},
+  48              {-7  ,  29179},
+  49              {-6  ,  27924},
+  50              {-5  ,  26731},
+  51              {-4  ,  25589},
+  52              {-3  ,  24504},
+  53              {-2  ,  23472},
+  54              {-1  ,  22490},
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 2   
+
+  55              { 0  ,  21556},
+  56              { 1  ,  20670},
+  57              { 2  ,  19826},
+  58              { 3  ,  19022},
+  59              { 4  ,  18256},
+  60              { 5  ,  17526},
+  61              { 6  ,  16829},
+  62              { 7  ,  16165},
+  63              { 8  ,  15531},
+  64              { 9  ,  14927},
+  65              {10  ,  14350},
+  66              {11  ,  13798},
+  67              {12  ,  13271},
+  68              {13  ,  12768},
+  69              {14  ,  12287},
+  70              {15  ,  11828},
+  71              {16  ,  11388},
+  72              {17  ,  10967},
+  73              {18  ,  10564},
+  74              {19  ,  10179},
+  75              {20  ,   9811},
+  76              {21  ,   9459},
+  77              {22  ,   9122},
+  78              {23  ,   8799},
+  79              {24  ,   8489},
+  80              {25  ,   8193},
+  81              {26  ,   7908},
+  82              {27  ,   7636},
+  83              {28  ,   7374},
+  84              {29  ,   7123},
+  85              {30  ,   6883},
+  86              {31  ,   6652},
+  87              {32  ,   6431},
+  88              {33  ,   6218},
+  89              {34  ,   6014},
+  90              {35  ,   5819},
+  91              {36  ,   5630},
+  92              {37  ,   5450},
+  93              {38  ,   5276},
+  94              {39  ,   5109},
+  95              {40  ,   4949},
+  96              {41  ,   4794},
+  97              {42  ,   4644},
+  98              {43  ,   4500},
+  99              {44  ,   4362},
+ 100              {45  ,   4229},
+ 101              {46  ,   4101},
+ 102              {47  ,   3978},
+ 103              {48  ,   3860},
+ 104              {49  ,   3746},
+ 105              {50  ,   3636},
+ 106              {51  ,   3531},
+ 107              {52  ,   3429},
+ 108              {53  ,   3331},
+ 109              {54  ,   3237},
+ 110              {55  ,   3146},
+ 111              {56  ,   3057},
+ 112              {57  ,   2972},
+ 113              {58  ,   2890},
+ 114              {59  ,   2810},
+ 115              {60  ,   2733},
+ 116              {61  ,   2661},
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 3   
+
+ 117              {62  ,   2590},
+ 118              {63  ,   2523},
+ 119              {64  ,   2457},
+ 120              {65  ,   2394},
+ 121              {66  ,   2333},
+ 122              {67  ,   2273},
+ 123              {68  ,   2216},
+ 124              {69  ,   2161},
+ 125              {70  ,   2107},
+ 126              {71  ,   2055},
+ 127              {72  ,   2005},
+ 128              {73  ,   1957},
+ 129              {74  ,   1910},
+ 130              {75  ,   1865},
+ 131          };
+ 132          const sint32_t code TempTable3[6][2]=
+ 133          {
+ 134              //'C
+ 135              {50 , 3643},
+ 136              {55 , 3154},
+ 137              {60 , 2744},
+ 138              {65 , 2398},
+ 139              {70 , 2105},
+ 140              {75 , 1861}
+ 141          };
+ 142          
+ 143          uint32_t xdata RA_Test;
+ 144          sint16_t Get_temperature(void)
+ 145          {
+ 146   1          float result_value;
+ 147   1          uint32_t xdata RA;
+ 148   1      
+ 149   1          if (RA_Test<10000)
+ 150   1              RA_Test = RA_Test + 200;
+ 151   1          else
+ 152   1              if (RA_Test<10000)
+ 153   1                  RA_Test = RA_Test + 400;
+ 154   1              else
+ 155   1                  RA_Test = RA_Test + 500;
+ 156   1          RA_Test = RA_Test & 0x0001FFFF;
+ 157   1          if (RA_Test>120000)
+ 158   1              RA_Test = 1800;
+ 159   1          //RA = RA_Test;//A8507_24BRCADC(ABmode,RCADC0);
+ 160   1          RA = A8507_24BRCADC(ABmode,RCADC0);
+ 161   1          result_value = CalculateTemp(RA);
+ 162   1          
+ 163   1          return (result_value*10);
+ 164   1      }
+ 165          uint32_t A8507_24BRCADC(uint8_t mod_sel, uint8_t rcadc_sel)
+ 166          {        /*                  ========        =======
+ 167   1              *                        |                   |____RCADC0 or RCADC1
+ 168   1              *                        |_______________ABmode or BAmode
+ 169   1              */
+ 170   1          uint8_t rcadc_shift_addr,tmp;
+ 171   1          uint32_t RA = 0;
+ 172   1          XBYTE[RST_REG] = RCADC_RST;//Reset RC-ADC
+ 173   1          if(RCADC0 == rcadc_sel)
+ 174   1          {
+ 175   2              P0=0xFF;
+ 176   2              P0OE &= 0xF0;
+ 177   2              P0PUN &=0xF0;//|=0x0F;
+ 178   2              IOSEL |= RCADC0;
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 4   
+
+ 179   2              rcadc_shift_addr=0x00;
+ 180   2              
+ 181   2              XBYTE[0x2071+rcadc_shift_addr] = 0xFF;
+ 182   2                 XBYTE[0x20AE+rcadc_shift_addr] = 0x00;
+ 183   2              XBYTE[0x2070+rcadc_shift_addr] = (RCADC24B_RACK | mod_sel | RCADC24B_CKS );
+ 184   2      
+ 185   2          }
+ 186   1          /*else
+ 187   1          {
+ 188   1                      P1   = 0xFF;
+ 189   1                      P1OE = 0xF0;
+ 190   1                      P1PUN = 0x0F;
+ 191   1                      IOSEL |= 0x70;
+ 192   1                   
+ 193   1                      rcadc_shift_addr=0x09;
+ 194   1      
+ 195   1                      A8105_WriteReg((RADWTC1_REG),  RCADC24B_WTC );
+ 196   1                      A8105_WriteReg((RADMAN1_REG),  0x00);
+ 197   1                      A8105_WriteReg((RADMOD1_REG), (RCADC24B_RACK | mod_sel | RCADC24B_CKS ) );
+ 198   1              
+ 199   1          }//*/
+ 200   1          switch(mod_sel)
+ 201   1          {
+ 202   2              case ABmode:
+ 203   2                      
+ 204   2                  XBYTE[RADCA00_REG+2+rcadc_shift_addr] = RCADC24B_HIGH;    //RA=0xFFE000
+ 205   2                  XBYTE[RADCA00_REG+1+rcadc_shift_addr] = RCADC24B_MID;
+ 206   2                  XBYTE[RADCA00_REG+  rcadc_shift_addr] = RCADC24B_LOW;
+ 207   2              
+ 208   2                  XBYTE[RADCB00_REG+2+rcadc_shift_addr] = 0x00;    //RB=0x000000
+ 209   2                  XBYTE[RADCB00_REG+1+rcadc_shift_addr] = 0x00;
+ 210   2                  XBYTE[RADCB00_REG+  rcadc_shift_addr] = 0x00;
+ 211   2              break;
+ 212   2              /*case BAmode:
+ 213   2      
+ 214   2                  A8105_WriteReg((RADCA00_REG+2+rcadc_shift_addr), 0x00);    //RA=0x000000
+ 215   2                  A8105_WriteReg((RADCA00_REG+1+rcadc_shift_addr), 0x00);
+ 216   2                  A8105_WriteReg((RADCA00_REG+rcadc_shift_addr),   0x00);
+ 217   2                  
+ 218   2                  A8105_WriteReg((RADCB00_REG+2+rcadc_shift_addr), RCADC24B_HIGH);    //RB=0xFFE000
+ 219   2                  A8105_WriteReg((RADCB00_REG+1+rcadc_shift_addr), RCADC24B_MID);
+ 220   2                  A8105_WriteReg((RADCB00_REG+rcadc_shift_addr),   RCADC24B_LOW);
+ 221   2              break;//*/
+ 222   2          }
+ 223   1          if(RCADC0 == rcadc_sel)
+ 224   1          {        
+ 225   2              XBYTE[RADCON0_REG+rcadc_shift_addr] = (0x81 | RCADC24B_MVT);  //0 avg
+ 226   2              do{
+ 227   3                  tmp = XBYTE[RADCON0_REG+rcadc_shift_addr];
+ 228   3              }while(tmp & 0x01);
+ 229   2          }
+ 230   1          /*else
+ 231   1          {
+ 232   1              A8105_WriteReg((RADCON1_REG), 0x09 | RCADC24B_MVT);  //0 avg
+ 233   1              do{
+ 234   1                  tmp = A8105_ReadReg((RADCON1_REG));
+ 235   1              }while(tmp & 0x01);
+ 236   1          }//*/
+ 237   1          //read RA & RB
+ 238   1          RA = XBYTE[RADCA00_REG+2+rcadc_shift_addr];
+ 239   1          RA <<= 8;
+ 240   1          RA = RA + XBYTE[RADCA00_REG+1+rcadc_shift_addr];
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 5   
+
+ 241   1          RA <<= 8;
+ 242   1          RA = RA + XBYTE[RADCA00_REG+rcadc_shift_addr];
+ 243   1          _nop_();
+ 244   1          /*RB = A8105_ReadReg(RADCB00_REG+2+rcadc_shift_addr);
+ 245   1          RB <<= 8;
+ 246   1          RB = RB + A8105_ReadReg(RADCB00_REG+1+rcadc_shift_addr);
+ 247   1          RB <<= 8;
+ 248   1          RB = RB + A8105_ReadReg(RADCB00_REG+rcadc_shift_addr);//*/
+ 249   1          return RA;
+ 250   1      }
+ 251          float CalculateTemp(uint32_t adc_val)
+ 252          {
+ 253   1          float FineValue = 0,CoarseValue = 0;
+ 254   1          uint8_t find_flag = 1,i,j,k;
+ 255   1      
+ 256   1          if((adc_val >= TempTable1[0][1]))  // x <= -35¢XC
+ 257   1          {
+ 258   2              k=0;
+ 259   2              i=2;
+ 260   2              j=4; 
+ 261   2              CoarseValue = -35;
+ 262   2              FineValue = 0;
+ 263   2      
+ 264   2              /* 20170220
+ 265   2              while(find_flag)
+ 266   2              {
+ 267   2                  if(TempTable2[i][1]>= adc_val)
+ 268   2                  {
+ 269   2                      if(TempTable2[i+1][1]< adc_val)
+ 270   2                      {    
+ 271   2                          CoarseValue = TempTable2[i+1][0];
+ 272   2                          FineValue = ((float)DataProcess(TempTable2[i+1][1],TempTable2[i][1],adc_val,50))/10;
+ 273   2                          find_flag=0;
+ 274   2                      }
+ 275   2                      else
+ 276   2                      {
+ 277   2                          k=i;
+ 278   2                          i=(int)((j-i)/2)+k;
+ 279   2                          j=j;
+ 280   2                                                                        
+ 281   2                      }
+ 282   2                  }
+ 283   2                    else if(TempTable2[i][1]< adc_val)
+ 284   2                  {
+ 285   2                      if(TempTable2[i-1][1]> adc_val)
+ 286   2                      {                
+ 287   2                          CoarseValue = TempTable2[i][0];
+ 288   2                          FineValue = ((float)DataProcess(TempTable2[i][1],TempTable2[i-1][1],adc_val,50))/10;
+ 289   2                          find_flag=0;
+ 290   2                      }
+ 291   2                      else
+ 292   2                      {
+ 293   2                          k=k;
+ 294   2                           j=i;
+ 295   2                          i=(int)(((i-k)/2)+k);
+ 296   2                      }
+ 297   2                  }
+ 298   2                    else
+ 299   2                  {
+ 300   2                      while(1);
+ 301   2                  }
+ 302   2              }
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 6   
+
+ 303   2              */
+ 304   2          }
+ 305   1          else if((adc_val <= TempTable1[110][1]))// x >= 75¢XC
+ 306   1          {
+ 307   2              k=0;
+ 308   2              i=3;
+ 309   2              j=6; 
+ 310   2              CoarseValue = 75;
+ 311   2              FineValue = 0;
+ 312   2              /* 20170220
+ 313   2              while(find_flag)
+ 314   2              {
+ 315   2                  if(TempTable3[i][1]>= adc_val)
+ 316   2                  {
+ 317   2                      if(TempTable3[i+1][1]< adc_val)
+ 318   2                      {    
+ 319   2                          CoarseValue = TempTable3[i+1][0];
+ 320   2                          FineValue = ((float)DataProcess(TempTable3[i+1][1],TempTable3[i][1],adc_val,50))/10;
+ 321   2                          find_flag=0;
+ 322   2                      }
+ 323   2                      else
+ 324   2                      {
+ 325   2                          k=i;
+ 326   2                          i=(int)((j-i)/2)+k;
+ 327   2                          j=j;
+ 328   2                                                                        
+ 329   2                      }
+ 330   2                  }
+ 331   2                    else if(TempTable3[i][1]< adc_val)
+ 332   2                  {
+ 333   2                      if(TempTable3[i-1][1]> adc_val)
+ 334   2                      {                
+ 335   2                          CoarseValue = TempTable3[i][0];
+ 336   2                          FineValue = ((float)DataProcess(TempTable3[i][1],TempTable3[i-1][1],adc_val,50))/10;
+ 337   2                          find_flag=0;
+ 338   2                      }
+ 339   2                      else
+ 340   2                      {
+ 341   2                          k=k;
+ 342   2                           j=i;
+ 343   2                          i=(int)(((i-k)/2)+k);
+ 344   2                      }
+ 345   2                  }
+ 346   2                    else
+ 347   2                  {
+ 348   2                      while(1);
+ 349   2                  }
+ 350   2              }
+ 351   2              */
+ 352   2          }
+ 353   1          else    //  -30¢XC < x < 75¢XC
+ 354   1          {
+ 355   2              k=0;
+ 356   2              i=55;//20170220
+ 357   2              j=110;//20170220
+ 358   2          
+ 359   2              while(find_flag)
+ 360   2              {
+ 361   3                  if(TempTable1[i][1]>= adc_val)
+ 362   3                  {
+ 363   4                      if(TempTable1[i+1][1]< adc_val)
+ 364   4                      {    
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 7   
+
+ 365   5                          CoarseValue = TempTable1[i+1][0];
+ 366   5                          FineValue = ((float)DataProcess(TempTable1[i+1][1],TempTable1[i][1],adc_val,10))/10;
+ 367   5                          find_flag=0;
+ 368   5                      }
+ 369   4                      else
+ 370   4                      {
+ 371   5                          k=i;
+ 372   5                          i=(int)((j-i)/2)+k;
+ 373   5                          j=j;
+ 374   5                                                                        
+ 375   5                      }
+ 376   4                  }
+ 377   3                    else if(TempTable1[i][1]< adc_val)
+ 378   3                  {
+ 379   4                      if(TempTable1[i-1][1]> adc_val)
+ 380   4                      {                
+ 381   5                          CoarseValue = TempTable1[i][0];
+ 382   5                          FineValue = ((float)DataProcess(TempTable1[i][1],TempTable1[i-1][1],adc_val,10))/10;
+ 383   5                          find_flag=0;
+ 384   5                      }
+ 385   4                      else
+ 386   4                      {
+ 387   5                          k=k;
+ 388   5                           j=i;
+ 389   5                          i=(int)(((i-k)/2)+k);
+ 390   5                      }
+ 391   4                  }
+ 392   3                    else
+ 393   3                  {
+ 394   4                      while(1);
+ 395   4                  }
+ 396   3              }
+ 397   2          }
+ 398   1          return CoarseValue-FineValue;
+ 399   1      }
+ 400          uint8_t DataProcess(uint32_t floor,uint32_t ceiling,uint32_t adc_val,uint8_t ArraySize)
+ 401          {
+ 402   1          uint8_t find_flag,i,j,k;
+ 403   1          uint32_t    Difference1 = 0,
+ 404   1                  Difference2 = 0;
+ 405   1      
+ 406   1          uint32_t *temp_buf = malloc(ArraySize * sizeof(uint32_t));
+ 407   1          
+ 408   1          temp_buf[0] = floor;
+ 409   1          temp_buf[ArraySize-1] = ceiling;
+ 410   1          for(i = 1 ; i < ArraySize-1 ; i++)
+ 411   1          {
+ 412   2              temp_buf[i] = temp_buf[0]+((ceiling-floor)/ArraySize)*i;
+ 413   2          }
+ 414   1      
+ 415   1          k=0;
+ 416   1          i=ArraySize/2;
+ 417   1          j=ArraySize;
+ 418   1          find_flag = 1;
+ 419   1          while(find_flag)
+ 420   1          {
+ 421   2              if(temp_buf[i]<= adc_val)
+ 422   2              {
+ 423   3                  if(temp_buf[i+1]> adc_val)
+ 424   3                  {                    
+ 425   4                      find_flag=0;
+ 426   4                      
+C51 COMPILER V9.00   RCADC                                                                 11/17/2017 14:47:16 PAGE 8   
+
+ 427   4                      Difference1 = abs(adc_val- temp_buf[i]);
+ 428   4                      Difference2 = abs(adc_val- temp_buf[i+1]);
+ 429   4                      if(Difference1 > Difference2)
+ 430   4                          i = i+1;
+ 431   4                  }
+ 432   3                  else
+ 433   3                  {
+ 434   4                      k=i;
+ 435   4                      i=(int)((j-i)/2)+k;
+ 436   4                      j=j;
+ 437   4                                                                    
+ 438   4                  }
+ 439   3              }
+ 440   2                else if(temp_buf[i]> adc_val)
+ 441   2              {
+ 442   3                  if(temp_buf[i-1]< adc_val)
+ 443   3                  {
+ 444   4                      find_flag=0;
+ 445   4                      Difference1 = abs(adc_val- temp_buf[i]);
+ 446   4                      Difference2 = abs(adc_val- temp_buf[i-1]);
+ 447   4                      if(Difference1 > Difference2)
+ 448   4                          i = i-1;
+ 449   4                  }
+ 450   3                  else
+ 451   3                  {
+ 452   4                      k=k;
+ 453   4                       j=i;
+ 454   4                      i=(int)(((i-k)/2)+k);
+ 455   4                  }
+ 456   3              }
+ 457   2                else
+ 458   2              {
+ 459   3                  while(1);
+ 460   3              }
+ 461   2          };
+ 462   1          free(temp_buf);
+ 463   1          return i;
+ 464   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1558    ----
+   CONSTANT SIZE    =    968    ----
+   XDATA SIZE       =      4      53
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

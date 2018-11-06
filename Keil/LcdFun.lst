@@ -1,0 +1,187 @@
+C51 COMPILER V9.53.0.0   LCDFUN                                                            11/05/2018 10:15:37 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE LCDFUN
+OBJECT MODULE PLACED IN .\LcdFun.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE ..\Lcd\LcdFun.c LARGE OPTIMIZE(9,SIZE) BROWSE NOAREGS INTVECTOR(0X0300) 
+                    -INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\LcdFun.lst) TABS(2) OBJECT(.\LcdFun.obj)
+
+line level    source
+
+   1          #include "LcdFun.h"
+   2          #include "define.h"
+   3          #include "LCD.h"
+   4          #include "A8107.h"
+   5          //---------------------------------------------
+   6          void InitLCD(void)
+   7          {
+   8   1        uint16_t  i;
+   9   1        uint8_t LCD_IO_tmp; 
+  10   1      
+  11   1        //Port0's I/O  configured as input. According the [#define LCD_ELCDAE1] [#define LCD_ELCDAE2] @ A8105_LCD
+             -.h
+  12   1          LCD_IO_tmp = 0;
+  13   1          for(i=0;i<=3;i++)
+  14   1          {
+  15   2          LCD_IO_tmp<<=1;
+  16   2          if((LCD_ELCDAE1<<i) & 0x80)
+  17   2            LCD_IO_tmp  |= 0x01;
+  18   2          }
+  19   1      
+  20   1          P0OE  &= ~( LCD_IO_tmp  | ((LCD_ELCDAE2 & 0x01) << 7 )| ((LCD_ELCDAE2 & 0x02) << 3 ) );
+  21   1          P0PUN &= ~( LCD_IO_tmp  | ((LCD_ELCDAE2 & 0x01) << 7 ) | ((LCD_ELCDAE2 & 0x02) << 3 ) );
+  22   1          P0WUN = 0xFF;
+  23   1      
+  24   1          //Port1's I/O  configured as input. According the [#define LCD_ELCDAE1] [#define LCD_ELCDAE3] @ A8105_
+             -LCD.h
+  25   1          LCD_IO_tmp = 0;
+  26   1          for(i=4;i<=7;i++)
+  27   1          {
+  28   2          LCD_IO_tmp<<=1;
+  29   2      
+  30   2          if((LCD_ELCDAE1<<i) & 0x80)
+  31   2            LCD_IO_tmp  |= 0x01;
+  32   2          }
+  33   1      
+  34   1          LCD_IO_tmp  |= ((LCD_ELCDAE3<<4)    & 0x80);
+  35   1          LCD_IO_tmp  |= ((LCD_ELCDAE3<<3)    & 0x40);
+  36   1      
+  37   1          P1OE  &= ~LCD_IO_tmp;
+  38   1          P1PUN &= ~LCD_IO_tmp;
+  39   1          P1WUN = 0xFF;
+  40   1      
+  41   1          //Port2's I/O  configured as input. According the [#define LCD_ELCDAE0] @ A8105_LCD.h
+  42   1          P2OE  &= ~LCD_ELCDAE0;
+  43   1          P2PUN &= ~LCD_ELCDAE0;
+  44   1          P2WUN = 0xFF;
+  45   1      
+  46   1          //Port3's I/O  configured as input. According the [#define LCD_ELCDAE3] @ A8105_LCD.h
+  47   1          P3OE  &= ~(LCD_ELCDAE3 & 0x03);
+  48   1          P3PUN &= ~(LCD_ELCDAE3 & 0x03);
+  49   1          P3WUN = 0xFF;
+  50   1          
+  51   1          //   Setting I/O as COM or Segment analog input.
+  52   1          XBYTE[ELCDAE0_REG] = LCD_ELCDAE0;
+C51 COMPILER V9.53.0.0   LCDFUN                                                            11/05/2018 10:15:37 PAGE 2   
+
+  53   1          XBYTE[ELCDAE1_REG] = LCD_ELCDAE1;   
+  54   1          XBYTE[ELCDAE2_REG] = LCD_ELCDAE2;   
+  55   1          XBYTE[ELCDAE3_REG] = LCD_ELCDAE3;
+  56   1      
+  57   1          //LCD config
+  58   1          for(i=LB_LCDBCTL0_REG;i<=HB_LCDBVCTL_REG;i++)
+  59   1              XBYTE[i] = LCD_ConfigTab[i-LB_LCDBCTL0_REG];
+  60   1      
+  61   1          for(i=LCDM_S0_REG;i<=LCDM_S46_REG;i++)
+  62   1          XBYTE[i] = 0x00;
+  63   1      
+  64   1          for(i=LCD_Misc_REG;i<=LCDBMEMCTL_REG;i++)
+  65   1              XBYTE[i] = LCD_ConfigTab[(i-LB_LCDBCTL0_REG)-0x0018];
+  66   1      
+  67   1          for(i=LCDBM_S0_REG;i<=LCDBM_S46_REG;i++)
+  68   1              XBYTE[i] = 0x00;
+  69   1      
+  70   1          XBYTE[LB_LCDBCTL1_REG] = LCD_ConfigTab[8];
+  71   1          XBYTE[HB_LCDBCTL1_REG] = LCD_ConfigTab[9];
+  72   1          XBYTE[LCD_Misc2_REG] = LCD_ConfigTab[11];
+  73   1          XBYTE[LCD_Misc3_REG] = LCD_ConfigTab[12];
+  74   1      }
+  75          //---------------------------------------------
+  76          void LCDON(uint8_t sel)
+  77          {
+  78   1      /*             ======
+  79   1                          |____ENABLE:  LCD turn on.
+  80   1                          |____DISABLE: LCD trun off.
+  81   1      
+  82   1          ex: LCD_ON(ENABLE);
+  83   1              LCD_ON(DISABLE);
+  84   1      */
+  85   1           if(ENABLE == sel)
+  86   1           {
+  87   2              XBYTE[LCD_Misc_REG]    = (LCD_ConfigTab[4] & 0xFE);  //LCDOFF off =0
+  88   2              XBYTE[LB_LCDBVCTL_REG] = (LCD_ConfigTab[2] | 0x08);  //Charge pump  on
+  89   2              XBYTE[LB_LCDBCTL0_REG] = (LCD_ConfigTab[0] & 0x7F) | 0x07;  //LCD on
+  90   2              XBYTE[HB_LCDBVCTL_REG] = (LCD_ConfigTab[3] | 0x01);  //VLCDx  on
+  91   2           }
+  92   1           else
+  93   1           {
+  94   2              XBYTE[LB_LCDBCTL0_REG] = LCD_ConfigTab[0];  //LCD off
+  95   2              XBYTE[LB_LCDBVCTL_REG] = LCD_ConfigTab[2];  //Charge pump  off
+  96   2              XBYTE[HB_LCDBVCTL_REG] = (LCD_ConfigTab[3]|0x01);  //VLCDx  off
+  97   2              XBYTE[LCD_Misc_REG]    = LCD_ConfigTab[4];  //LCDOFF off
+  98   2           }
+  99   1      }
+ 100          //---------------------------------------------
+ 101          void Display_4mux(uint8_t position, uint8_t Num)
+ 102          {
+ 103   1        uint8_t NumValue , NumValue1;
+ 104   1        
+ 105   1        NumValue  = NumTable_4mux[Num];
+ 106   1        NumValue1   = NumTable_4mux1[Num];
+ 107   1      
+ 108   1        switch (position)
+ 109   1        {
+ 110   2          case 1:
+ 111   2            XBYTE[LCDM_S14_REG] = NumValue;
+ 112   2            XBYTE[LCDBM_S14_REG] = NumValue;
+ 113   2      
+ 114   2            XBYTE[LCDM_S16_REG] = NumValue1;
+C51 COMPILER V9.53.0.0   LCDFUN                                                            11/05/2018 10:15:37 PAGE 3   
+
+ 115   2            XBYTE[LCDBM_S16_REG] = NumValue1;
+ 116   2            break;
+ 117   2      
+ 118   2          case 2:
+ 119   2            XBYTE[LCDM_S12_REG] = NumValue;
+ 120   2            XBYTE[LCDBM_S12_REG] = NumValue;
+ 121   2      
+ 122   2            XBYTE[LCDM_S18_REG] = NumValue1;
+ 123   2            XBYTE[LCDBM_S18_REG] = NumValue1;
+ 124   2            break;
+ 125   2      
+ 126   2          case 3:
+ 127   2            XBYTE[LCDM_S10_REG] = NumValue;
+ 128   2            XBYTE[LCDBM_S10_REG] = NumValue;
+ 129   2      
+ 130   2            XBYTE[LCDM_S20_REG] = NumValue1;
+ 131   2            XBYTE[LCDBM_S20_REG] = NumValue1;
+ 132   2            break;
+ 133   2      
+ 134   2          case 4:
+ 135   2            XBYTE[LCDM_S8_REG] = NumValue;
+ 136   2            XBYTE[LCDBM_S8_REG] = NumValue;
+ 137   2      
+ 138   2            XBYTE[LCDM_S22_REG] = NumValue1;
+ 139   2            XBYTE[LCDBM_S22_REG] = NumValue1;
+ 140   2            break;
+ 141   2          case 5:
+ 142   2            XBYTE[LCDM_S6_REG] = NumValue;
+ 143   2            XBYTE[LCDBM_S6_REG] = NumValue;
+ 144   2      
+ 145   2            XBYTE[LCDM_S24_REG] = NumValue1;
+ 146   2            XBYTE[LCDBM_S24_REG] = NumValue1;
+ 147   2            break;
+ 148   2      
+ 149   2          case 6:
+ 150   2            XBYTE[LCDM_S4_REG] = NumValue;
+ 151   2            XBYTE[LCDBM_S4_REG] = NumValue;
+ 152   2      
+ 153   2            XBYTE[LCDM_S26_REG] = NumValue1;
+ 154   2            XBYTE[LCDBM_S26_REG] = NumValue1;
+ 155   2            break;
+ 156   2        }
+ 157   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    530    ----
+   CONSTANT SIZE    =     76    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1 @@
+"..\BLE Service\servicegen.c" LARGE OPTIMIZE (9,SIZE) BROWSE NOAREGS INTVECTOR(0x0300) INCDIR(..\include;..\BLE Service;..\Lcd) DEBUG OBJECTEXTEND PRINT(.\servicegen.lst) TABS (2) OBJECT(.\servicegen.obj)
